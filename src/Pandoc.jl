@@ -2,6 +2,8 @@ module Pandoc
 
 import JSON
 
+const PANDOC_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
+
 @enum Alignment AlignLeft=1 AlignRight=2 AlignCenter=3 AlignDefault=4
 @enum ListNumberStyle DefaultStyle=1 Example=2 Decimal=3 LowerRoman=4 UpperRoman=5 LowerAlpha=6 UpperAlpha=7
 @enum ListNumberDelim DefaultDelim=1 Period=2 OneParen=3 TwoParens=4
@@ -591,7 +593,7 @@ function get_elements(blocks)
 end
 
 function run_pandoc(filename)
-    cmd = `pandoc -t json $filename`
+    cmd = `$PANDOC_EXECUTABLE -t json $filename`
     data = read(cmd, String)
     return Document(JSON.parse(data))
 end
