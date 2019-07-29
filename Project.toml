@@ -1,0 +1,4 @@
+name = "Pandoc"
+uuid = "f853b5e0-b243-11e9-0043-7da5023c5ee7"
+authors = ["Dheepak Krishnamurthy <me@kdheepak.com>"]
+version = "0.1.0"
