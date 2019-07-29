@@ -391,8 +391,8 @@ end
 
 function get_element(e, ::Type{Div})
     attr = Attributes(e["c"][1]...)
-    blocks = Block[get_element(b) for b in e["c"]]
-    return BlockQuote(attr, blocks)
+    blocks = Block[get_element(b) for b in e["c"][2]]
+    return Div(attr, blocks)
 end
 
 function get_element(e, ::Type{BlockQuote})
