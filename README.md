@@ -1,4 +1,4 @@
-# Pandoc.jl
+# Pandoc.jl [![Build Status](https://travis-ci.com/kdheepak/Pandoc.jl.svg?branch=master)](https://travis-ci.com/kdheepak/Pandoc.jl)
 
 [Pandoc.jl](https://github.com/kdheepak/Pandoc.jl) is a package allow easier interfacing with Pandoc.
 
