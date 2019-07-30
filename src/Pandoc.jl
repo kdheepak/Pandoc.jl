@@ -1,5 +1,7 @@
 module Pandoc
 
+using Compat
+
 import JSON
 
 const PANDOC_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
