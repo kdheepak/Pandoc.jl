@@ -1,3 +1,10 @@
+__precompile__()
+
+"""
+    Pandoc
+
+Pandoc wrapper to read JSON AST from `pandoc`
+"""
 module Pandoc
 
 using Compat
