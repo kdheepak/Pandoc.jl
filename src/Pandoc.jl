@@ -249,13 +249,18 @@ Base.show(io::IO, e::Unknown) = print(io, """$(typeof(e))(
                                         e = $(JSON.json(e.e)),
                                         t = $(e.t),
                                         )""")
-Base.show(io::IO, e::Element) = print(io, "$(typeof(e))()")
 Base.show(io::IO, e::Link) = print(io, """Link(
         content = $(e.content),
         target = $(e.target),
     )""")
+Base.show(io::IO, e::Attributes) = print(io, """Attributes(
+                                         identifier = $(e.identifier),
+                                         classes = $(e.classes),
+                                         attributes = $(e.attributes),
+                                         )""")
 Base.show(io::IO, e::Header) = print(io, """Header(
         level = $(e.level),
+        attributes = $(e.attr),
         content = $(e.content),
     )""")
 Base.show(io::IO, e::Str) = print(io, """Str("$(e.content)")""")
