@@ -610,4 +610,9 @@ function run_pandoc(filename)
     return Document(JSON.parse(data))
 end
 
+function exists()
+    p = run(`which $PANDOC_EXECUTABLE`, wait=false)
+    return success(p)
+end
+
 end # module
