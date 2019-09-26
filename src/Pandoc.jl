@@ -238,6 +238,13 @@ struct Unknown
     t
 end
 
+pandoc_api_version(v) = pandoc_api_version(v, Val(length(v)))
+pandoc_api_version(v, length::Val{0}) = error("Version array has to be length > 0 but got `$v` instead")
+pandoc_api_version(v, length::Val{1}) = VersionNumber(v[1])
+pandoc_api_version(v, length::Val{2}) = VersionNumber(v[1], v[2])
+pandoc_api_version(v, length::Val{3}) = VersionNumber(v[1], v[2], v[3])
+pandoc_api_version(v, length) = VersionNumber(v[1], v[2], v[3], tuple(v[4:end]...))
+
 mutable struct Document
     data::Dict{String, Any}
     pandoc_api_version::VersionNumber
@@ -245,10 +252,10 @@ mutable struct Document
     blocks::Vector{Element}
 
     function Document(data)
-        pandoc_api_version = VersionNumber(data["pandoc-api-version"][1:end-1]..., (data["pandoc-api-version"][end],))
+        pav = pandoc_api_version(data["pandoc-api-version"])
         meta = data["meta"]
         blocks = get_elements(data["blocks"])
-        return new(data, pandoc_api_version, meta, blocks)
+        return new(data, pav, meta, blocks)
     end
 end
 
