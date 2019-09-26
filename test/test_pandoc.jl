@@ -1,5 +1,15 @@
 
 
+@testset "test version parser" begin
+
+    @test Pandoc.pandoc_api_version([1]) == v"1.0.0"
+    @test Pandoc.pandoc_api_version([1, 2]) == v"1.2"
+    @test Pandoc.pandoc_api_version([1, 2, 3]) == v"1.2.3"
+    @test Pandoc.pandoc_api_version([1, 2, 3, 4]) == v"1.2.3-4"
+    @test Pandoc.pandoc_api_version([1, 2, 3, 4, 5]) == v"1.2.3-4.5"
+
+end
+
 @testset "test pandoc parser" begin
 
     @testset "docbook" begin
