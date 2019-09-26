@@ -245,7 +245,7 @@ mutable struct Document
     blocks::Vector{Element}
 
     function Document(data)
-        pandoc_api_version = VersionNumber(data["pandoc-api-version"][1:end-1]..., (data["pandoc-api-version"][end],))
+        pandoc_api_version = VersionNumber(data["pandoc-api-version"][1:end-1]..., data["pandoc-api-version"][end])
         meta = data["meta"]
         blocks = get_elements(data["blocks"])
         return new(data, pandoc_api_version, meta, blocks)
