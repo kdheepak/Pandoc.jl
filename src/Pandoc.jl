@@ -1,4 +1,4 @@
-__precompile__()
+__precompile__(true)
 
 """
     Pandoc
@@ -8,6 +8,7 @@ Pandoc wrapper to read JSON AST from `pandoc`
 module Pandoc
 
 import JSON
+import Markdown
 
 const PANDOC_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
 
@@ -611,7 +612,7 @@ function get_elements(blocks)
     return elements
 end
 
-function run_pandoc(filename)
+function run(filename)
     cmd = `$PANDOC_EXECUTABLE -t json $filename`
     data = read(cmd, String)
     return Document(JSON.parse(data))
