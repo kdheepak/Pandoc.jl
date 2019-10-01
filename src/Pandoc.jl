@@ -711,6 +711,7 @@ Base.convert(::Type{Inline}, e::Markdown.LineBreak) = convert(LineBreak, e)
 Base.convert(::Type{LineBreak}, e::Markdown.LineBreak) = LineBreak()
 
 Base.convert(::Type{Element}, e::Markdown.BlockQuote) = convert(BlockQuote, e)
+Base.convert(::Type{Block}, e::Markdown.BlockQuote) = convert(BlockQuote, e)
 function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
 
     content = Block[]
@@ -725,5 +726,21 @@ end
 Base.convert(::Type{Element}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{Block}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.language], []), e.code)
+
+
+Base.convert(::Type{Element}, e::Markdown.List) = convert(OrderedList, e)
+Base.convert(::Type{Block}, e::Markdown.List) = convert(OrderedList, e)
+function Base.convert(::Type{OrderedList}, e::Markdown.List)
+    content = Vector{Block}[]
+    for items in e.items
+        block = Block[]
+        for item in items
+            push!(block, item)
+        end
+        push!(content, block)
+    end
+    # always returns list level 1 with Decimal with Period
+    return OrderedList(ListAttributes(1, Pandoc.Decimal, Pandoc.Period), content)
+end
 
 end # module
