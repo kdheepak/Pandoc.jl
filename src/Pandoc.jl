@@ -660,10 +660,12 @@ function _convert(::Type{Vector{Inline}}, text::AbstractString)
 end
 
 Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
+Base.convert(::Type{Inline}, e::Markdown.Link) = convert(Link, e)
 function Base.convert(::Type{Link}, e::Markdown.Link)
 
     content = Inline[]
-    for s in split(e.text[1])
+    text = e.text isa AbstractString ? e.text : e.text[1]
+    for s in split(text)
         push!(content, convert(Str, s))
         push!(content, Space())
     end
@@ -677,8 +679,13 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
                )
 end
 
-Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
-Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
+Base.convert(::Type{Element}, e::Markdown.Bold) = convert(Emph, e)
+Base.convert(::Type{Inline}, e::Markdown.Bold) = convert(Emph, e)
+Base.convert(::Type{Emph}, e::Markdown.Bold) = Emph(Inline[i for i in e.text])
+
+Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Strong, e)
+Base.convert(::Type{Inline}, e::Markdown.Italic) = convert(Strong, e)
+Base.convert(::Type{Strong}, e::Markdown.Italic) = Strong(Inline[i for i in e.text])
 
 Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
 Base.convert(::Type{Block}, e::Markdown.Paragraph) = convert(Para, e)
@@ -691,13 +698,13 @@ function Base.convert(::Type{Para}, e::Markdown.Paragraph)
                 push!(content, Space())
             end
         else
-            if content[end] isa Space
+            if length(content) > 0 && content[end] isa Space
                 pop!(content) # remove last Space()
             end
             push!(content, c)
         end
     end
-    if content[end] isa Space
+    if length(content) > 0 && content[end] isa Space
         pop!(content) # remove last Space()
     end
     return Para(content)
@@ -723,10 +730,21 @@ function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
     return BlockQuote(content)
 end
 
-Base.convert(::Type{Element}, e::Markdown.Code) = convert(CodeBlock, e)
+function Base.convert(::Type{Element}, e::Markdown.Code)
+    if '\n' in e.code
+        # Block
+        convert(CodeBlock, e)
+    else
+        # Inline
+        convert(Code, e)
+    end
+end
+
 Base.convert(::Type{Block}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.language], []), e.code)
 
+Base.convert(::Type{Inline}, e::Markdown.Code) = convert(Code, e)
+Base.convert(::Type{Code}, e::Markdown.Code) = Code(Attributes("", [e.language], []), e.code)
 
 Base.convert(::Type{Element}, e::Markdown.List) = convert(OrderedList, e)
 Base.convert(::Type{Block}, e::Markdown.List) = convert(OrderedList, e)
@@ -741,6 +759,21 @@ function Base.convert(::Type{OrderedList}, e::Markdown.List)
     end
     # always returns list level 1 with Decimal with Period
     return OrderedList(ListAttributes(1, Pandoc.Decimal, Pandoc.Period), content)
+end
+
+Base.convert(::Type{Element}, e::Markdown.LaTeX) = convert(Inline, e)
+Base.convert(::Type{Inline}, e::Markdown.LaTeX) = Math(InlineMath, e.formula)
+
+Base.convert(::Type{Inline}, e::Markdown.Image) = Image(Attributes(), [], Target(e.url, e.alt))
+
+Base.convert(::Type{Element}, e::Markdown.Footnote) = convert(Inline, e)
+function Base.convert(::Type{Inline}, e::Markdown.Footnote)
+    isnothing(e.text) && return Note([])
+    content = Block[]
+    for p in e.text
+        push!(content, p)
+    end
+    return Note(content)
 end
 
 end # module
