@@ -646,6 +646,7 @@ end
 
 Base.convert(::Type{Str}, e::AbstractString) = Str(e)
 Base.convert(::Type{Element}, e::AbstractString) = convert(Str, e)
+Base.convert(::Type{Inline}, e::AbstractString) = convert(Str, e)
 Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
                                                                      V #= level =#,
                                                                      Attributes(),
@@ -653,15 +654,19 @@ Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
                                                                     )
 Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
 
-function Base.convert(::Type{Link}, e::Markdown.Link)
-
+function Base.convert(::Type{Vector{Inline}}, text::AbstractString)
     content = Inline[]
-    for s in split(e.text[1])
+    for s in split(text)
         push!(content, convert(Str, s))
         push!(content, Space())
     end
     pop!(content) # remove last Space()
+    return content
+end
 
+function Base.convert(::Type{Link}, e::Markdown.Link)
+
+    content = convert(Vector{Inline}, e.text[1])
     target = Target(e.url, "")
 
     return Link(
@@ -671,5 +676,17 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
                )
 end
 Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
+
+Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
+Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
+
+Base.convert(::Type{Para}, e::Markdown.Paragraph) = Para(convert(Vector{Inline}, e.content[1]))
+Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
+
+
+Base.convert(::Type{HorizontalRule}, e::Markdown.HorizontalRule) = HorizontalRule()
+Base.convert(::Type{Element}, e::Markdown.HorizontalRule) = convert(HorizontalRule, e)
+
+
 
 end # module
