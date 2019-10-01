@@ -10,7 +10,7 @@ module Pandoc
 import JSON
 import Markdown
 
-const PANDOC_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
+const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
 
 @enum Alignment AlignLeft=1 AlignRight=2 AlignCenter=3 AlignDefault=4
 @enum ListNumberStyle DefaultStyle=1 Example=2 Decimal=3 LowerRoman=4 UpperRoman=5 LowerAlpha=6 UpperAlpha=7
@@ -38,6 +38,7 @@ struct Attributes
         return new(identifier, classes, attributes)
     end
 end
+Attributes() = Attributes("", [], [],)
 
 struct Citation
     mode::CitationMode
@@ -251,13 +252,13 @@ mutable struct Document
     pandoc_api_version::VersionNumber
     meta::Dict{String, Any}
     blocks::Vector{Element}
+end
 
-    function Document(data)
-        pav = pandoc_api_version(data["pandoc-api-version"])
-        meta = data["meta"]
-        blocks = get_elements(data["blocks"])
-        return new(data, pav, meta, blocks)
-    end
+function Document(data)
+    pav = pandoc_api_version(data["pandoc-api-version"])
+    meta = data["meta"]
+    blocks = get_elements(data["blocks"])
+    return Document(data, pav, meta, blocks)
 end
 
 Base.show(io::IO, e::Unknown) = print(io, """$(typeof(e))(
@@ -612,15 +613,63 @@ function get_elements(blocks)
     return elements
 end
 
-function run(filename)
-    cmd = `$PANDOC_EXECUTABLE -t json $filename`
+function parse(markdown)
+    cmd = pipeline(`echo $markdown`, `$PANDOC_JL_EXECUTABLE -t json`)
     data = read(cmd, String)
     return Document(JSON.parse(data))
 end
 
-function exists()
-    p = run(`which $PANDOC_EXECUTABLE`, wait=false)
-    return success(p)
+function parse_file(filename)
+    cmd = `$PANDOC_JL_EXECUTABLE -t json $filename`
+    data = read(cmd, String)
+    return Document(JSON.parse(data))
 end
+
+exists() = run(`which $PANDOC_JL_EXECUTABLE`, wait=false) |> success
+
+### Convert
+
+function Base.convert(::Type{Document}, md::Markdown.MD)
+
+    pav = v"1.17.5-4"
+    meta = Dict{String, Any}()
+    data = Dict{String, Any}()
+    blocks = Element[]
+
+    for e in md.content
+        push!(blocks, convert(Element, e))
+    end
+
+    return Document(data, pav, meta, blocks)
+
+end
+
+Base.convert(::Type{Str}, e::AbstractString) = Str(e)
+Base.convert(::Type{Element}, e::AbstractString) = convert(Str, e)
+Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
+                                                                     V #= level =#,
+                                                                     Attributes(),
+                                                                     Element[x for x in e.text],
+                                                                    )
+Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
+
+function Base.convert(::Type{Link}, e::Markdown.Link)
+
+    content = Inline[]
+    for s in split(e.text[1])
+        push!(content, convert(Str, s))
+        push!(content, Space())
+    end
+    pop!(content) # remove last Space()
+
+    target = Target(e.url, "")
+
+    return Link(
+                Attributes(),
+                content,
+                target,
+               )
+end
+Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
 
 end # module
