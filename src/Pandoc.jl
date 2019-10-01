@@ -644,20 +644,22 @@ function Base.convert(::Type{Document}, md::Markdown.MD)
 
 end
 
-Base.convert(::Type{Str}, e::AbstractString) = Str(e)
 Base.convert(::Type{Element}, e::AbstractString) = convert(Str, e)
 Base.convert(::Type{Inline}, e::AbstractString) = convert(Str, e)
+Base.convert(::Type{Str}, e::AbstractString) = Str(e)
+
+Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
 Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
                                                                      V #= level =#,
                                                                      Attributes(),
                                                                      Element[x for x in e.text],
                                                                     )
-Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
 
 function _convert(::Type{Vector{Inline}}, text::AbstractString)
     return content
 end
 
+Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
 function Base.convert(::Type{Link}, e::Markdown.Link)
 
     content = Inline[]
@@ -674,11 +676,12 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
                 target,
                )
 end
-Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
 
-Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
 Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
+Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
 
+Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
+Base.convert(::Type{Block}, e::Markdown.Paragraph) = convert(Para, e)
 function Base.convert(::Type{Para}, e::Markdown.Paragraph)
     content = Inline[]
     for c in e.content
@@ -699,15 +702,28 @@ function Base.convert(::Type{Para}, e::Markdown.Paragraph)
     end
     return Para(content)
 end
-Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
 
-
-Base.convert(::Type{HorizontalRule}, e::Markdown.HorizontalRule) = HorizontalRule()
 Base.convert(::Type{Element}, e::Markdown.HorizontalRule) = convert(HorizontalRule, e)
+Base.convert(::Type{HorizontalRule}, e::Markdown.HorizontalRule) = HorizontalRule()
 
-
-Base.convert(::Type{LineBreak}, e::Markdown.LineBreak) = LineBreak()
 Base.convert(::Type{Element}, e::Markdown.LineBreak) = convert(LineBreak, e)
 Base.convert(::Type{Inline}, e::Markdown.LineBreak) = convert(LineBreak, e)
+Base.convert(::Type{LineBreak}, e::Markdown.LineBreak) = LineBreak()
+
+Base.convert(::Type{Element}, e::Markdown.BlockQuote) = convert(BlockQuote, e)
+function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
+
+    content = Block[]
+
+    for c in e.content
+        push!(content, c)
+    end
+
+    return BlockQuote(content)
+end
+
+Base.convert(::Type{Element}, e::Markdown.Code) = convert(CodeBlock, e)
+Base.convert(::Type{Block}, e::Markdown.Code) = convert(CodeBlock, e)
+Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.language], []), e.code)
 
 end # module
