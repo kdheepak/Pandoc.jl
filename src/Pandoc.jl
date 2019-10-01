@@ -654,19 +654,18 @@ Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
                                                                     )
 Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
 
-function Base.convert(::Type{Vector{Inline}}, text::AbstractString)
-    content = Inline[]
-    for s in split(text)
-        push!(content, convert(Str, s))
-        push!(content, Space())
-    end
-    pop!(content) # remove last Space()
+function _convert(::Type{Vector{Inline}}, text::AbstractString)
     return content
 end
 
 function Base.convert(::Type{Link}, e::Markdown.Link)
 
-    content = convert(Vector{Inline}, e.text[1])
+    content = Inline[]
+    for s in split(e.text[1])
+        push!(content, convert(Str, s))
+        push!(content, Space())
+    end
+    pop!(content) # remove last Space()
     target = Target(e.url, "")
 
     return Link(
@@ -680,7 +679,26 @@ Base.convert(::Type{Element}, e::Markdown.Link) = convert(Link, e)
 Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
 Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
 
-Base.convert(::Type{Para}, e::Markdown.Paragraph) = Para(convert(Vector{Inline}, e.content[1]))
+function Base.convert(::Type{Para}, e::Markdown.Paragraph)
+    content = Inline[]
+    for c in e.content
+        if c isa AbstractString
+            for s in split(c)
+                push!(content, convert(Str, s))
+                push!(content, Space())
+            end
+        else
+            if content[end] isa Space
+                pop!(content) # remove last Space()
+            end
+            push!(content, c)
+        end
+    end
+    if content[end] isa Space
+        pop!(content) # remove last Space()
+    end
+    return Para(content)
+end
 Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
 
 
@@ -688,5 +706,8 @@ Base.convert(::Type{HorizontalRule}, e::Markdown.HorizontalRule) = HorizontalRul
 Base.convert(::Type{Element}, e::Markdown.HorizontalRule) = convert(HorizontalRule, e)
 
 
+Base.convert(::Type{LineBreak}, e::Markdown.LineBreak) = LineBreak()
+Base.convert(::Type{Element}, e::Markdown.LineBreak) = convert(LineBreak, e)
+Base.convert(::Type{Inline}, e::Markdown.LineBreak) = convert(LineBreak, e)
 
 end # module
