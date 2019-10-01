@@ -269,7 +269,7 @@ Base.show(io::IO, e::Link) = print(io, """Link(
         target = $(e.target),
     )""")
 Base.show(io::IO, e::Attributes) = print(io, """Attributes(
-                                         identifier = $(e.identifier),
+                                         identifier = "$(e.identifier)",
                                          classes = $(e.classes),
                                          attributes = $(e.attributes),
                                          )""")
