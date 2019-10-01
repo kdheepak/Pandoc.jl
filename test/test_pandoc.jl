@@ -12,8 +12,147 @@ end
 
 @testset "test conversions" begin
 
-    @test typeof(convert(Pandoc.Header, Markdown.parse("Headers\n=======").content[1])) == Pandoc.Header
+    @test (
+           convert(Pandoc.Header, Markdown.Header{1}(Any["Headers"]))
+           ==
+           Pandoc.Header(1, Pandoc.Attributes(), Pandoc.Element[Pandoc.Str("Headers")])
+          )
 
+    @test (
+           convert(Pandoc.Str, "hello")
+           ==
+           Pandoc.Str("hello")
+          )
+
+    @test (
+           convert(Pandoc.Link, Markdown.Link("title", "https://example.com"))
+           ==
+           Pandoc.Link(
+                       Pandoc.Attributes(),
+                       Pandoc.Inline[Pandoc.Str("title")],
+                       Pandoc.Target("https://example.com", ""),
+                      )
+          )
+
+    @test (
+           convert(Pandoc.Strong, Markdown.Bold(["bold"]))
+           ==
+           Pandoc.Strong(Pandoc.Inline[Pandoc.Str("bold")])
+          )
+
+    @test (
+           convert(Pandoc.Emph, Markdown.Italic(["italic"]))
+           ==
+           Pandoc.Emph(Pandoc.Inline[Pandoc.Str("italic")])
+          )
+
+    @test (
+           convert(Pandoc.Para, Markdown.Paragraph(Any["this is a paragraph"]))
+           ==
+           Pandoc.Para(
+                       Pandoc.Inline[
+                                     Pandoc.Str("this"),
+                                     Pandoc.Space(),
+                                     Pandoc.Str("is"),
+                                     Pandoc.Space(),
+                                     Pandoc.Str("a"),
+                                     Pandoc.Space(),
+                                     Pandoc.Str("paragraph"),
+                                    ]
+                      )
+          )
+
+    @test (
+           convert(Pandoc.HorizontalRule, Markdown.HorizontalRule())
+           ==
+           Pandoc.HorizontalRule()
+          )
+
+    @test (
+           convert(Pandoc.LineBreak, Markdown.LineBreak())
+           ==
+           Pandoc.LineBreak()
+          )
+
+    @test (
+           convert(Pandoc.BlockQuote, Markdown.BlockQuote(Any[Markdown.Paragraph(Any["this is a paragraph"])]))
+           ==
+           Pandoc.BlockQuote(
+                             Pandoc.Block[
+                                          Pandoc.Para(
+                                                      Pandoc.Inline[
+                                                                    Pandoc.Str("this"),
+                                                                    Pandoc.Space(),
+                                                                    Pandoc.Str("is"),
+                                                                    Pandoc.Space(),
+                                                                    Pandoc.Str("a"),
+                                                                    Pandoc.Space(),
+                                                                    Pandoc.Str("paragraph")
+                                                            ],
+                                              ),
+                                         ]
+                            )
+          )
+
+    @test (
+           convert(Pandoc.CodeBlock, Markdown.Code("x = π \ny = π / 2"))
+           ==
+           Pandoc.CodeBlock(
+                            Pandoc.Attributes("", [""], []),
+                            "x = π \ny = π / 2"
+                           )
+          )
+
+    @test (
+           convert(Pandoc.Code, Markdown.Code("x = π"))
+           ==
+           Pandoc.Code(
+                       Pandoc.Attributes("", [""], []),
+                       "x = π"
+                      )
+          )
+
+    @test (
+           convert(Pandoc.OrderedList, Markdown.List(Any[Any[Markdown.Paragraph(Any["one"])], Any[Markdown.Paragraph(Any["two"])]], 1, false))
+           ==
+           Pandoc.OrderedList(
+                              Pandoc.ListAttributes(
+                                                    1,
+                                                    Pandoc.Decimal,
+                                                    Pandoc.Period
+                                                   ),
+                              [
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("one")],
+                                    )
+                               ],
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("two")],
+                                    )
+                               ]
+                              ]
+                             )
+          )
+
+    @test (
+           convert(Pandoc.Math, Markdown.LaTeX("x = π"))
+           ==
+           Pandoc.Math(Pandoc.InlineMath, "x = π")
+          )
+
+    @test (
+           convert(Pandoc.Image, Markdown.Image("./image.png", ""))
+           ==
+           Pandoc.Image(Pandoc.Attributes(), [], Pandoc.Target("./image.png", ""))
+          )
+
+    @test (
+           convert(Pandoc.Note, Markdown.Footnote("1", nothing))
+           ==
+           Pandoc.Note(Pandoc.Block[])
+          )
 end
 
 @testset "test pandoc parser" begin

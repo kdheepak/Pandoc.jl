@@ -110,6 +110,7 @@ struct Header <: Block
     attr::Attributes
     content::Vector{Element}
 end
+Header(level) = Header(level, Attributes(), [])
 
 """Horizontal rule"""
 struct HorizontalRule <: Block end
@@ -664,7 +665,11 @@ Base.convert(::Type{Inline}, e::Markdown.Link) = convert(Link, e)
 function Base.convert(::Type{Link}, e::Markdown.Link)
 
     content = Inline[]
-    text = e.text isa AbstractString ? e.text : e.text[1]
+    text = if e.text isa AbstractString
+        e.text
+    else
+        length(e.text) > 0 : e.text[1] : ""
+    end
     for s in split(text)
         push!(content, convert(Str, s))
         push!(content, Space())
@@ -679,13 +684,13 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
                )
 end
 
-Base.convert(::Type{Element}, e::Markdown.Bold) = convert(Emph, e)
-Base.convert(::Type{Inline}, e::Markdown.Bold) = convert(Emph, e)
-Base.convert(::Type{Emph}, e::Markdown.Bold) = Emph(Inline[i for i in e.text])
+Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
+Base.convert(::Type{Inline}, e::Markdown.Italic) = convert(Emph, e)
+Base.convert(::Type{Emph}, e::Markdown.Italic) = Emph(Inline[i for i in e.text])
 
-Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Strong, e)
-Base.convert(::Type{Inline}, e::Markdown.Italic) = convert(Strong, e)
-Base.convert(::Type{Strong}, e::Markdown.Italic) = Strong(Inline[i for i in e.text])
+Base.convert(::Type{Element}, e::Markdown.Bold) = convert(Strong, e)
+Base.convert(::Type{Inline}, e::Markdown.Bold) = convert(Strong, e)
+Base.convert(::Type{Strong}, e::Markdown.Bold) = Strong(Inline[i for i in e.text])
 
 Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
 Base.convert(::Type{Block}, e::Markdown.Paragraph) = convert(Para, e)
@@ -762,12 +767,15 @@ function Base.convert(::Type{OrderedList}, e::Markdown.List)
 end
 
 Base.convert(::Type{Element}, e::Markdown.LaTeX) = convert(Inline, e)
-Base.convert(::Type{Inline}, e::Markdown.LaTeX) = Math(InlineMath, e.formula)
+Base.convert(::Type{Inline}, e::Markdown.LaTeX) = convert(Math, e)
+Base.convert(::Type{Math}, e::Markdown.LaTeX) = Math(InlineMath, e.formula)
 
-Base.convert(::Type{Inline}, e::Markdown.Image) = Image(Attributes(), [], Target(e.url, e.alt))
+Base.convert(::Type{Inline}, e::Markdown.Image) = convert(Image, e)
+Base.convert(::Type{Image}, e::Markdown.Image) = Image(Attributes(), [], Target(e.url, e.alt))
 
 Base.convert(::Type{Element}, e::Markdown.Footnote) = convert(Inline, e)
-function Base.convert(::Type{Inline}, e::Markdown.Footnote)
+Base.convert(::Type{Inline}, e::Markdown.Footnote) = convert(Note, e)
+function Base.convert(::Type{Note}, e::Markdown.Footnote)
     isnothing(e.text) && return Note([])
     content = Block[]
     for p in e.text
@@ -775,5 +783,24 @@ function Base.convert(::Type{Inline}, e::Markdown.Footnote)
     end
     return Note(content)
 end
+
+### overloads
+
+# fallback
+compare(x, y) = false
+
+function compare(x::T, y::T) where T
+    equality = true
+    for fieldname in fieldnames(T)
+        equality = equality && ( getfield(x, fieldname) == getfield(y, fieldname) )
+    end
+    return equality
+end
+
+Base.:(==)(x::T, y::T) where T<:Pandoc.Element = compare(x, y)
+Base.:(==)(x::Attributes, y::Attributes) = compare(x, y)
+Base.:(==)(x::Citation, y::Citation) = compare(x, y)
+Base.:(==)(x::ListAttributes, y::ListAttributes) = compare(x, y)
+Base.:(==)(x::Target, y::Target) = compare(x, y)
 
 end # module
