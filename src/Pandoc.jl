@@ -718,12 +718,13 @@ function Base.convert(::Type{Para}, e::Markdown.Paragraph)
                 push!(content, convert(Str, s))
                 push!(content, Space())
             end
-        else
             if length(content) > 0 && content[end] isa Space
                 pop!(content) # remove last Space()
             end
+        else
             push!(content, c)
         end
+        push!(content, Space())
     end
     if length(content) > 0 && content[end] isa Space
         pop!(content) # remove last Space()
