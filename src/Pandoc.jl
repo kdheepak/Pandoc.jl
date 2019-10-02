@@ -735,16 +735,7 @@ function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
     return BlockQuote(content)
 end
 
-function Base.convert(::Type{Element}, e::Markdown.Code)
-    if '\n' in e.code
-        # Block
-        convert(CodeBlock, e)
-    else
-        # Inline
-        convert(Code, e)
-    end
-end
-
+Base.convert(::Type{Element}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{Block}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.language], []), e.code)
 
