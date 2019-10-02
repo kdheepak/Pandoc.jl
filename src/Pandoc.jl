@@ -650,11 +650,27 @@ Base.convert(::Type{Inline}, e::AbstractString) = convert(Str, e)
 Base.convert(::Type{Str}, e::AbstractString) = Str(e)
 
 Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
-Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
-                                                                     V #= level =#,
-                                                                     Attributes(),
-                                                                     Element[x for x in e.text],
-                                                                    )
+function Base.convert(::Type{Header}, e::Markdown.Header{V}) where V
+    content = Element[]
+
+    for s in split(e.text[1])
+        push!(content, convert(Str, s))
+        push!(content, Space())
+    end
+    if length(content) > 0 && content[end] isa Space
+        pop!(content) # remove last Space()
+    end
+
+    return Header(
+        V #= level =#,
+        Attributes(
+                replace(lowercase(e.text[1]), " " => "-"),
+                [],
+                []
+               ),
+        content,
+    )
+end
 
 function _convert(::Type{Vector{Inline}}, text::AbstractString)
     return content
@@ -702,12 +718,13 @@ function Base.convert(::Type{Para}, e::Markdown.Paragraph)
                 push!(content, convert(Str, s))
                 push!(content, Space())
             end
-        else
             if length(content) > 0 && content[end] isa Space
                 pop!(content) # remove last Space()
             end
+        else
             push!(content, c)
         end
+        push!(content, Space())
     end
     if length(content) > 0 && content[end] isa Space
         pop!(content) # remove last Space()
@@ -735,24 +752,28 @@ function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
     return BlockQuote(content)
 end
 
-function Base.convert(::Type{Element}, e::Markdown.Code)
-    if '\n' in e.code
-        # Block
-        convert(CodeBlock, e)
-    else
-        # Inline
-        convert(Code, e)
-    end
-end
-
+Base.convert(::Type{Element}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{Block}, e::Markdown.Code) = convert(CodeBlock, e)
 Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.language], []), e.code)
 
 Base.convert(::Type{Inline}, e::Markdown.Code) = convert(Code, e)
 Base.convert(::Type{Code}, e::Markdown.Code) = Code(Attributes("", [e.language], []), e.code)
 
-Base.convert(::Type{Element}, e::Markdown.List) = convert(OrderedList, e)
-Base.convert(::Type{Block}, e::Markdown.List) = convert(OrderedList, e)
+Base.convert(::Type{Element}, e::Markdown.List) = e.ordered == 1 ? convert(OrderedList, e) : convert(BulletList, e)
+Base.convert(::Type{Block}, e::Markdown.List) = e.ordered == 1 ? convert(OrderedList, e) : convert(BulletList, e)
+
+function Base.convert(::Type{BulletList}, e::Markdown.List)
+    content = Vector{Block}[]
+    for items in e.items
+        block = Block[]
+        for item in items
+            push!(block, item)
+        end
+        push!(content, block)
+    end
+    return BulletList(content)
+end
+
 function Base.convert(::Type{OrderedList}, e::Markdown.List)
     content = Vector{Block}[]
     for items in e.items

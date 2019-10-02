@@ -13,9 +13,9 @@ end
 @testset "test conversions" begin
 
     @test (
-           convert(Pandoc.Header, Markdown.Header{1}(Any["Headers"]))
+           convert(Pandoc.Header, Markdown.Header{1}(Any["Header 1"]))
            ==
-           Pandoc.Header(1, Pandoc.Attributes(), Pandoc.Element[Pandoc.Str("Headers")])
+           Pandoc.Header(1, Pandoc.Attributes("header-1", [], []), Pandoc.Element[Pandoc.Str("Header"), Pandoc.Space(), Pandoc.Str("1")])
           )
 
     @test (
@@ -58,17 +58,17 @@ end
           )
 
     @test (
-           convert(Pandoc.Para, Markdown.Paragraph(Any["this is a paragraph"]))
+           convert(Pandoc.Para, Markdown.Paragraph(Any["this ", Markdown.Bold(Any["is"]), " ", Markdown.Italic(Any["a"]), " ", Markdown.Link(Any["link"], "https://example.com")]))
            ==
            Pandoc.Para(
                        Pandoc.Inline[
                                      Pandoc.Str("this"),
                                      Pandoc.Space(),
-                                     Pandoc.Str("is"),
+                                     Pandoc.Strong(Pandoc.Inline[Pandoc.Str("is")]),
                                      Pandoc.Space(),
-                                     Pandoc.Str("a"),
+                                     Pandoc.Emph(Pandoc.Inline[Pandoc.Str("a")]),
                                      Pandoc.Space(),
-                                     Pandoc.Str("paragraph"),
+                                     Pandoc.Link(Pandoc.Attributes(), Pandoc.Inline[Pandoc.Str("link")], Pandoc.Target("https://example.com", "")),
                                     ]
                       )
           )
@@ -121,6 +121,25 @@ end
                        Pandoc.Attributes("", [""], []),
                        "x = π"
                       )
+          )
+
+    @test (
+           convert(Pandoc.BulletList, Markdown.List(Any[Any[Markdown.Paragraph(Any["one"])], Any[Markdown.Paragraph(Any["two"])]], -1, false))
+           ==
+           Pandoc.BulletList(
+                              [
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("one")],
+                                    )
+                               ],
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("two")],
+                                    )
+                               ]
+                              ]
+                             )
           )
 
     @test (
