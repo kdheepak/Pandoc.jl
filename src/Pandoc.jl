@@ -668,7 +668,7 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
     text = if e.text isa AbstractString
         e.text
     else
-        length(e.text) > 0 : e.text[1] : ""
+        length(e.text) > 0 ? e.text[1] : ""
     end
     for s in split(text)
         push!(content, convert(Str, s))

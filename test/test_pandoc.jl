@@ -35,6 +35,17 @@ end
           )
 
     @test (
+           convert(Pandoc.Link, Markdown.Link(Any["title"], "https://example.com"))
+           ==
+           Pandoc.Link(
+                       Pandoc.Attributes(),
+                       Pandoc.Inline[Pandoc.Str("title")],
+                       Pandoc.Target("https://example.com", ""),
+                      )
+          )
+
+
+    @test (
            convert(Pandoc.Strong, Markdown.Bold(["bold"]))
            ==
            Pandoc.Strong(Pandoc.Inline[Pandoc.Str("bold")])
