@@ -13,9 +13,9 @@ end
 @testset "test conversions" begin
 
     @test (
-           convert(Pandoc.Header, Markdown.Header{1}(Any["Headers"]))
+           convert(Pandoc.Header, Markdown.Header{1}(Any["Header 1"]))
            ==
-           Pandoc.Header(1, Pandoc.Attributes(), Pandoc.Element[Pandoc.Str("Headers")])
+           Pandoc.Header(1, Pandoc.Attributes("header-1", [], []), Pandoc.Element[Pandoc.Str("Header"), Pandoc.Space(), Pandoc.Str("1")])
           )
 
     @test (

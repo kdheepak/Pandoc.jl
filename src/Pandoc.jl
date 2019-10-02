@@ -650,11 +650,27 @@ Base.convert(::Type{Inline}, e::AbstractString) = convert(Str, e)
 Base.convert(::Type{Str}, e::AbstractString) = Str(e)
 
 Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
-Base.convert(::Type{Header}, e::Markdown.Header{V}) where V = Header(
-                                                                     V #= level =#,
-                                                                     Attributes(),
-                                                                     Element[x for x in e.text],
-                                                                    )
+function Base.convert(::Type{Header}, e::Markdown.Header{V}) where V
+    content = Element[]
+
+    for s in split(e.text[1])
+        push!(content, convert(Str, s))
+        push!(content, Space())
+    end
+    if length(content) > 0 && content[end] isa Space
+        pop!(content) # remove last Space()
+    end
+
+    return Header(
+        V #= level =#,
+        Attributes(
+                replace(lowercase(e.text[1]), " " => "-"),
+                [],
+                []
+               ),
+        content,
+    )
+end
 
 function _convert(::Type{Vector{Inline}}, text::AbstractString)
     return content
