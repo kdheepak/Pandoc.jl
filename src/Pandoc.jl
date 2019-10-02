@@ -758,8 +758,21 @@ Base.convert(::Type{CodeBlock}, e::Markdown.Code) = CodeBlock(Attributes("", [e.
 Base.convert(::Type{Inline}, e::Markdown.Code) = convert(Code, e)
 Base.convert(::Type{Code}, e::Markdown.Code) = Code(Attributes("", [e.language], []), e.code)
 
-Base.convert(::Type{Element}, e::Markdown.List) = convert(OrderedList, e)
-Base.convert(::Type{Block}, e::Markdown.List) = convert(OrderedList, e)
+Base.convert(::Type{Element}, e::Markdown.List) = e.ordered == 1 ? convert(OrderedList, e) : convert(BulletList, e)
+Base.convert(::Type{Block}, e::Markdown.List) = e.ordered == 1 ? convert(OrderedList, e) : convert(BulletList, e)
+
+function Base.convert(::Type{BulletList}, e::Markdown.List)
+    content = Vector{Block}[]
+    for items in e.items
+        block = Block[]
+        for item in items
+            push!(block, item)
+        end
+        push!(content, block)
+    end
+    return BulletList(content)
+end
+
 function Base.convert(::Type{OrderedList}, e::Markdown.List)
     content = Vector{Block}[]
     for items in e.items

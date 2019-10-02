@@ -124,6 +124,25 @@ end
           )
 
     @test (
+           convert(Pandoc.BulletList, Markdown.List(Any[Any[Markdown.Paragraph(Any["one"])], Any[Markdown.Paragraph(Any["two"])]], -1, false))
+           ==
+           Pandoc.BulletList(
+                              [
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("one")],
+                                    )
+                               ],
+                               [
+                                Pandoc.Para(
+                                     Pandoc.Inline[Pandoc.Str("two")],
+                                    )
+                               ]
+                              ]
+                             )
+          )
+
+    @test (
            convert(Pandoc.OrderedList, Markdown.List(Any[Any[Markdown.Paragraph(Any["one"])], Any[Markdown.Paragraph(Any["two"])]], 1, false))
            ==
            Pandoc.OrderedList(
