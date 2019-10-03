@@ -680,8 +680,7 @@ Base.convert(::Type{Inline}, e::Markdown.Bold) = convert(Strong, e)
 Base.convert(::Type{Strong}, e::Markdown.Bold) = Strong(Inline[i for i in e.text])
 
 Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
-Base.convert(::Type{Block}, e::Markdown.Paragraph) = convert(Para, e)
-function Base.convert(::Type{Para}, e::Markdown.Paragraph)
+function Base.convert(::Type{T}, e::Markdown.Paragraph) where T<:Union{Para,Plain}
     content = Inline[]
     for c in e.content
         if c isa AbstractString
@@ -700,8 +699,9 @@ function Base.convert(::Type{Para}, e::Markdown.Paragraph)
     if length(content) > 0 && content[end] isa Space
         pop!(content) # remove last Space()
     end
-    return Para(content)
+    return T(content)
 end
+
 
 Base.convert(::Type{Element}, e::Markdown.HorizontalRule) = convert(HorizontalRule, e)
 Base.convert(::Type{HorizontalRule}, e::Markdown.HorizontalRule) = HorizontalRule()
@@ -717,7 +717,11 @@ function Base.convert(::Type{BlockQuote}, e::Markdown.BlockQuote)
     content = Block[]
 
     for c in e.content
-        push!(content, c)
+        if c isa Markdown.Paragraph
+            push!(content, convert(Para, c))
+        else
+            push!(content, c)
+        end
     end
 
     return BlockQuote(content)
@@ -738,7 +742,11 @@ function Base.convert(::Type{BulletList}, e::Markdown.List)
     for items in e.items
         block = Block[]
         for item in items
-            push!(block, item)
+            if item isa Markdown.Paragraph
+                push!(block, convert(Plain, item))
+            else
+                push!(block, item)
+            end
         end
         push!(content, block)
     end
@@ -750,7 +758,11 @@ function Base.convert(::Type{OrderedList}, e::Markdown.List)
     for items in e.items
         block = Block[]
         for item in items
-            push!(block, item)
+            if item isa Markdown.Paragraph
+                push!(block, convert(Plain, item))
+            else
+                push!(block, item)
+            end
         end
         push!(content, block)
     end
