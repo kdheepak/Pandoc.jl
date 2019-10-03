@@ -129,12 +129,12 @@ end
            Pandoc.BulletList(
                               [
                                [
-                                Pandoc.Para(
+                                Pandoc.Plain(
                                      Pandoc.Inline[Pandoc.Str("one")],
                                     )
                                ],
                                [
-                                Pandoc.Para(
+                                Pandoc.Plain(
                                      Pandoc.Inline[Pandoc.Str("two")],
                                     )
                                ]
@@ -153,12 +153,12 @@ end
                                                    ),
                               [
                                [
-                                Pandoc.Para(
+                                Pandoc.Plain(
                                      Pandoc.Inline[Pandoc.Str("one")],
                                     )
                                ],
                                [
-                                Pandoc.Para(
+                                Pandoc.Plain(
                                      Pandoc.Inline[Pandoc.Str("two")],
                                     )
                                ]
@@ -183,6 +183,106 @@ end
            ==
            Pandoc.Note(Pandoc.Block[])
           )
+
+    @test (
+           convert(Pandoc.BulletList,
+                   Markdown.List(
+                                 Any[
+                                     Any[
+                                         Markdown.Paragraph(Any["Item 1"]),
+                                         Markdown.List(
+                                                       Any[
+                                                           Any[
+                                                               Markdown.Paragraph(Any["Sub Item 1"]),
+                                                               Markdown.List(
+                                                                             Any[
+                                                                                 Any[Markdown.Paragraph(Any["Sub sub item 1"])],
+                                                                                 Any[Markdown.Paragraph(Any["Lorem ipsum"])]
+                                                                                ], -1, false
+                                                                            )
+                                                              ],
+                                                           Any[Markdown.Paragraph(Any["Sub Item 2"])]
+                                                          ], -1, false
+                                                      )
+                                        ],
+                                     Any[Markdown.Paragraph(Any["Item 2"])],
+                                     Any[Markdown.Paragraph(Any["Item 3"])]
+                                    ], -1, false
+                                )
+                  )
+           ==
+            Pandoc.BulletList(
+                              Array{Pandoc.Block,1}[
+                                                    [
+                                                     Pandoc.Plain(
+                                                                  Pandoc.Inline[
+                                                                                Pandoc.Str("Item"),
+                                                                                Pandoc.Space(),
+                                                                                Pandoc.Str("1")]
+                                                                 ),
+                                                     Pandoc.BulletList(
+                                                                       Array{Pandoc.Block,1}[
+                                                                                             [
+                                                                                              Pandoc.Plain(
+                                                                                                           Pandoc.Inline[
+                                                                                                                         Pandoc.Str("Sub"),
+                                                                                                                         Pandoc.Space(),
+                                                                                                                         Pandoc.Str("Item"),
+                                                                                                                         Pandoc.Space(),
+                                                                                                                         Pandoc.Str("1")
+                                                                                                                        ]
+                                                                                                          ),
+                                                                                              Pandoc.BulletList(
+                                                                                                                Array{Pandoc.Block,1}[
+                                                                                                                                      [
+                                                                                                                                       Pandoc.Plain(
+                                                                                                                                                    Pandoc.Inline[
+                                                                                                                                                                  Pandoc.Str("Sub"),
+                                                                                                                                                                  Pandoc.Space(),
+                                                                                                                                                                  Pandoc.Str("sub"),
+                                                                                                                                                                  Pandoc.Space(),
+                                                                                                                                                                  Pandoc.Str("item"),
+                                                                                                                                                                  Pandoc.Space(),
+                                                                                                                                                                  Pandoc.Str("1")
+                                                                                                                                                                 ]
+                                                                                                                                                   )
+                                                                                                                                      ],
+                                                                                                                                      [
+                                                                                                                                       Pandoc.Plain(
+                                                                                                                                                    Pandoc.Inline[
+                                                                                                                                                                  Pandoc.Str("Lorem"),
+                                                                                                                                                                  Pandoc.Space(),
+                                                                                                                                                                  Pandoc.Str("ipsum"),
+                                                                                                                                                                 ]
+                                                                                                                                                   )
+                                                                                                                                      ]
+                                                                                                                                     ]
+                                                                                                               )
+                                                                                             ],
+                                                                                             [
+                                                                                              Pandoc.Plain(
+                                                                                                           Pandoc.Inline[
+                                                                                                                         Pandoc.Str("Sub"),
+                                                                                                                         Pandoc.Space(),
+                                                                                                                         Pandoc.Str("Item"),
+                                                                                                                         Pandoc.Space(),
+                                                                                                                         Pandoc.Str("2")
+                                                                                                                        ]
+                                                                                                          )
+                                                                                             ]
+                                                                                            ]
+                                                                      )
+                                                    ],
+                                                    [
+                                                     Pandoc.Plain(Pandoc.Inline[Pandoc.Str("Item"), Pandoc.Space(), Pandoc.Str("2")])
+                                                    ],
+                                                    [
+                                                     Pandoc.Plain(Pandoc.Inline[Pandoc.Str("Item"), Pandoc.Space(), Pandoc.Str("3")])
+                                                    ],
+                                                   ]
+                             )
+          )
+
 end
 
 @testset "test pandoc parser" begin
