@@ -262,35 +262,6 @@ function Document(data)
     return Document(data, pav, meta, blocks)
 end
 
-Base.show(io::IO, e::Unknown) = print(io, """$(typeof(e))(
-                                        e = $(JSON.json(e.e)),
-                                        t = $(e.t),
-                                        )""")
-Base.show(io::IO, e::Link) = print(io, """Link(
-        content = $(e.content),
-        target = $(e.target),
-    )""")
-Base.show(io::IO, e::Attributes) = print(io, """Attributes(
-                                         identifier = "$(e.identifier)",
-                                         classes = $(e.classes),
-                                         attributes = $(e.attributes),
-                                         )""")
-Base.show(io::IO, e::Header) = print(io, """Header(
-        level = $(e.level),
-        attributes = $(e.attr),
-        content = $(e.content),
-    )""")
-Base.show(io::IO, e::Str) = print(io, """Str("$(e.content)")""")
-Base.show(io::IO, e::Emph) = print(io, """Emph($(e.content))""")
-Base.show(io::IO, e::Para) = print(io, """Para(
-        content = $(e.content),
-    )""")
-Base.show(io::IO, d::Document) = print(io, """Document(
-    version = v$(d.pandoc_api_version),
-    blocks = $(d.blocks),
-)"""
-)
-
 function get_element(e, t)
     u = Unknown(e, t)
     @warn "Unknown element parsed: $u"
