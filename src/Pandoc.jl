@@ -31,12 +31,10 @@ struct Attributes
     identifier::String
     classes::Vector{String}
     attributes::Vector{Pair{String, String}}
-    function Attributes(identifier, classes, attributes)
-        identifier = String(identifier)
-        classes = String[c for c in classes]
-        attributes = Pair{String, String}[attr[1] => attr[2] for attr in attributes]
-        return new(identifier, classes, attributes)
-    end
+end
+function Attributes(identifier, classes, attributes::Vector{Any})
+    attributes = Pair{String, String}[attr[1] => attr[2] for attr in attributes]
+    return Attributes(identifier, classes, attributes)
 end
 Attributes() = Attributes("", [], [],)
 
@@ -75,6 +73,7 @@ struct CodeBlock <: Block
     attr::Attributes
     content::String
 end
+CodeBlock(content) = CodeBlock(Attributes(), content)
 
 """Raw block"""
 struct RawBlock <: Block
@@ -111,6 +110,7 @@ struct Header <: Block
     content::Vector{Element}
 end
 Header(level) = Header(level, Attributes(), [])
+Header(level, content) = Header(level, Attributes(), content)
 
 """Horizontal rule"""
 struct HorizontalRule <: Block end
@@ -129,6 +129,7 @@ struct Div <: Block
     attr::Attributes
     content::Vector{Block}
 end
+Div(content) = Div(Attributes(), content)
 
 struct Null <: Block end
 
@@ -189,6 +190,7 @@ struct Code <: Inline
     attr::Attributes
     content::String
 end
+Code(content) = Code(Attributes(), content)
 
 """Inter-word space"""
 struct Space <: Inline end
@@ -217,6 +219,7 @@ struct Link <: Inline
     content::Vector{Inline}
     target::Target
 end
+Link(content, target) = Link(Attributes(), content, target)
 
 """Image: alt text (list of inlines), target"""
 struct Image <: Inline
@@ -224,6 +227,7 @@ struct Image <: Inline
     content::Vector{Inline}
     target::Target
 end
+Image(content, target) = Image(Attributes(), content, target)
 
 """Footnote or endnote"""
 struct Note <: Inline
@@ -235,6 +239,7 @@ struct Span <: Inline
     attr::Attributes
     content::Vector{Inline}
 end
+Span(content) = Span(Attributes(), content)
 
 struct Unknown
     e
@@ -262,21 +267,21 @@ function Document(data)
     return Document(data, pav, meta, blocks)
 end
 
-function get_element(e, t)
+function get_element(t, e)
     u = Unknown(e, t)
     @warn "Unknown element parsed: $u"
     return u
 end
 
-get_element(e, ::Type{Null}) = Null()
-get_element(e, ::Type{SoftBreak}) = SoftBreak()
-get_element(e, ::Type{LineBreak}) = LineBreak()
-get_element(e, ::Type{HorizontalRule}) = HorizontalRule()
-get_element(e, ::Type{Space}) = Space()
+get_element(::Type{Null}, e) = Null()
+get_element(::Type{SoftBreak}, e) = SoftBreak()
+get_element(::Type{LineBreak}, e) = LineBreak()
+get_element(::Type{HorizontalRule}, e) = HorizontalRule()
+get_element(::Type{Space}, e) = Space()
 
-get_element(e, ::Type{Str}) = Str(e["c"])
+get_element(::Type{Str}, e) = Str(e["c"])
 
-function get_element(e, ::Type{LineBlock})
+function get_element(::Type{LineBlock}, e)
     content = Vector{Inline}[]
     for inlines in e["c"]
         push!(content, Inline[get_element(i) for i in inlines])
@@ -284,43 +289,43 @@ function get_element(e, ::Type{LineBlock})
     return LineBlock(content)
 end
 
-function get_element(e, ::Type{Superscript})
+function get_element(::Type{Superscript}, e)
     return Superscript(Inline[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{Subscript})
+function get_element(::Type{Subscript}, e)
     return Subscript(Inline[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{Note})
+function get_element(::Type{Note}, e)
     return Note(Block[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{Math})
+function get_element(::Type{Math}, e)
     math_type = eval(Symbol(e["c"][1]["t"]))
     content = e["c"][2]::String
     return Math(math_type, content)
 end
 
-function get_element(e, ::Type{RawInline})
+function get_element(::Type{RawInline}, e)
     format = e["c"][1]::String
     content = e["c"][2]::String
     return RawInline(format, content)
 end
 
-function get_element(e, ::Type{RawBlock})
+function get_element(::Type{RawBlock}, e)
     format = e["c"][1]::String
     content = e["c"][2]::String
     return RawBlock(format, content)
 end
 
-function get_element(e, ::Type{Quoted})
+function get_element(::Type{Quoted}, e)
     quote_type = eval(Symbol(e["c"][1]["t"]))
     content = Inline[get_element(i) for i in e["c"][2]]
     return Quoted(quote_type, content)
 end
 
-function get_element(e, ::Type{Table})
+function get_element(::Type{Table}, e)
     c = e["c"]
 
     content = Inline[get_element(i) for i in c[1]]
@@ -344,33 +349,33 @@ function get_element(e, ::Type{Table})
     return Table(content, alignments, widths, headers, rows)
 end
 
-function get_element(e, ::Type{Span})
+function get_element(::Type{Span}, e)
     return Span(
                 Attributes(e["c"][1]...),
                 Inline[get_element(i) for i in e["c"][2]]
                )
 end
 
-function get_element(e, ::Type{Image})
+function get_element(::Type{Image}, e)
     attr = Attributes(e["c"][1]...)
     content = Inline[get_element(i) for i in e["c"][2]]
     target = Target(e["c"][3]...)
     return Image(attr, content, target)
 end
 
-function get_element(e, ::Type{Strikeout})
+function get_element(::Type{Strikeout}, e)
     return Strikeout(Inline[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{SmallCaps})
+function get_element(::Type{SmallCaps}, e)
     return SmallCaps(Inline[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{Strong})
+function get_element(::Type{Strong}, e)
     return Strong(Inline[get_element(i) for i in e["c"]])
 end
 
-function get_element(e, ::Type{DefinitionList})
+function get_element(::Type{DefinitionList}, e)
     c = e["c"]
     dl = Vector{Pair{Vector{Inline}, Vector{Vector{Block}}}}( [] )
     for items in c
@@ -384,26 +389,26 @@ function get_element(e, ::Type{DefinitionList})
     return DefinitionList(dl)
 end
 
-function get_element(e, ::Type{Div})
+function get_element(::Type{Div}, e)
     attr = Attributes(e["c"][1]...)
     blocks = Block[get_element(b) for b in e["c"][2]]
     return Div(attr, blocks)
 end
 
-function get_element(e, ::Type{BlockQuote})
+function get_element(::Type{BlockQuote}, e)
     blocks = Block[get_element(b) for b in e["c"]]
     return BlockQuote(blocks)
 end
 
-function get_element(e, ::Type{ListAttributes})
+function get_element(::Type{ListAttributes}, e)
     number = e[1]
     style = eval(Symbol(e[2]["t"]))
     delim = eval(Symbol(e[3]["t"]))
     return ListAttributes(number, style, delim)
 end
 
-function get_element(e, ::Type{OrderedList})
-    attr = get_element(e["c"][1], ListAttributes)
+function get_element(::Type{OrderedList}, e)
+    attr = get_element(ListAttributes, e["c"][1])
     ol = Vector{Block}[]
     for elements in e["c"][2]
         sol = Block[]
@@ -416,7 +421,7 @@ function get_element(e, ::Type{OrderedList})
     return OrderedList(attr, ol)
 end
 
-function get_element(e, ::Type{Citation})
+function get_element(::Type{Citation}, e)
     mode = eval(Symbol(e["citationMode"]["t"]))
     prefix = Inline[get_element(i) for i in e["citationPrefix"]]
     hash = e["citationHash"]::Int
@@ -426,19 +431,19 @@ function get_element(e, ::Type{Citation})
     return Citation(mode, prefix, hash, id, suffix, note_number)
 end
 
-function get_element(e, ::Type{Cite})
-    citations = Citation[get_element(c, Citation) for c in e["c"][1]]
+function get_element(::Type{Cite}, e)
+    citations = Citation[get_element(Citation, c) for c in e["c"][1]]
     inlines = Inline[get_element(i) for i in e["c"][2]]
     return Cite(citations, inlines)
 end
 
-function get_element(e, ::Type{Code})
+function get_element(::Type{Code}, e)
     attr = Attributes(e["c"][1]...)
     content = e["c"][2]
     return Code(attr, content)
 end
 
-function get_element(e, ::Type{Plain})
+function get_element(::Type{Plain}, e)
     content = Inline[]
     for se in e["c"]
         push!(content, get_element(se))
@@ -446,13 +451,13 @@ function get_element(e, ::Type{Plain})
     return Plain(content)
 end
 
-function get_element(e, ::Type{CodeBlock})
+function get_element(::Type{CodeBlock}, e)
     attr = Attributes(e["c"][1]...)
     content = e["c"][2]::String
     return CodeBlock(attr, content)
 end
 
-function get_element(e, ::Type{BulletList})
+function get_element(::Type{BulletList}, e)
     bl = Vector{Block}[]
     for elements in e["c"]
         sbl = Block[]
@@ -465,15 +470,15 @@ function get_element(e, ::Type{BulletList})
     return BulletList(bl)
 end
 
-function get_element(e, t::Type{Emph})
+function get_element(::Type{Emph}, e)
     return Emph(Element[get_element(se) for se in e["c"]])
 end
 
-function get_element(e, t::Type{Para})
+function get_element(::Type{Para}, e)
     return Para(Element[get_element(se) for se in e["c"]])
 end
 
-function get_element(e, ::Type{Link})
+function get_element(::Type{Link}, e)
     c = e["c"]
     identifier = c[1][1]::String
     classes = String[s for s in c[1][2]]
@@ -489,7 +494,7 @@ function get_element(e, ::Type{Link})
     return Link(Attributes(identifier, classes, attributes), content, target)
 end
 
-function get_element(e, ::Type{Header})
+function get_element(::Type{Header}, e)
     c = e["c"]
     level = c[1]::Int
     identifier = c[2][1]::String
@@ -507,73 +512,73 @@ end
 function get_element(e)
     t = e["t"]
     return if t == "Header"
-        get_element(e, Header)
+        get_element(Header, e)
     elseif t == "Link"
-        get_element(e, Link)
+        get_element(Link, e)
     elseif t == "Space"
-        get_element(e, Space)
+        get_element(Space, e)
     elseif t == "Emph"
-        get_element(e, Emph)
+        get_element(Emph, e)
     elseif t == "Str"
-        get_element(e, Str)
+        get_element(Str, e)
     elseif t == "Para"
-        get_element(e, Para)
+        get_element(Para, e)
     elseif t == "HorizontalRule"
-        get_element(e, HorizontalRule)
+        get_element(HorizontalRule, e)
     elseif t == "BulletList"
-        get_element(e, BulletList)
+        get_element(BulletList, e)
     elseif t == "Plain"
-        get_element(e, Plain)
+        get_element(Plain, e)
     elseif t == "Code"
-        get_element(e, Code)
+        get_element(Code, e)
     elseif t == "CodeBlock"
-        get_element(e, CodeBlock)
+        get_element(CodeBlock, e)
     elseif t == "LineBreak"
-        get_element(e, LineBreak)
+        get_element(LineBreak, e)
     elseif t == "Cite"
-        get_element(e, Cite)
+        get_element(Cite, e)
     elseif t == "BlockQuote"
-        get_element(e, BlockQuote)
+        get_element(BlockQuote, e)
     elseif t == "OrderedList"
-        get_element(e, OrderedList)
+        get_element(OrderedList, e)
     elseif t == "DefinitionList"
-        get_element(e, DefinitionList)
+        get_element(DefinitionList, e)
     elseif t == "Strong"
-        get_element(e, Strong)
+        get_element(Strong, e)
     elseif t == "SmallCaps"
-        get_element(e, SmallCaps)
+        get_element(SmallCaps, e)
     elseif t == "Span"
-        get_element(e, Span)
+        get_element(Span, e)
     elseif t == "Strikeout"
-        get_element(e, Strikeout)
+        get_element(Strikeout, e)
     elseif t == "Image"
-        get_element(e, Image)
+        get_element(Image, e)
     elseif t == "Table"
-        get_element(e, Table)
+        get_element(Table, e)
     elseif t == "SoftBreak"
-        get_element(e, SoftBreak)
+        get_element(SoftBreak, e)
     elseif t == "Quoted"
-        get_element(e, Quoted)
+        get_element(Quoted, e)
     elseif t == "RawInline"
-        get_element(e, RawInline)
+        get_element(RawInline, e)
     elseif t == "RawBlock"
-        get_element(e, RawBlock)
+        get_element(RawBlock, e)
     elseif t == "Math"
-        get_element(e, Math)
+        get_element(Math, e)
     elseif t == "Superscript"
-        get_element(e, Superscript)
+        get_element(Superscript, e)
     elseif t == "Subscript"
-        get_element(e, Subscript)
+        get_element(Subscript, e)
     elseif t == "Note"
-        get_element(e, Note)
+        get_element(Note, e)
     elseif t == "LineBlock"
-        get_element(e, LineBlock)
+        get_element(LineBlock, e)
     elseif t == "Div"
-        get_element(e, Div)
+        get_element(Div, e)
     elseif t == "Null"
-        get_element(e, Null)
+        get_element(Null, e)
     else
-        get_element(e, t)
+        get_element(t, e)
     end
 end
 
