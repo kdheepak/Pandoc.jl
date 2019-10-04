@@ -5,7 +5,7 @@ __precompile__(true)
 
 Pandoc wrapper to read JSON AST from `pandoc`
 
-See https://hackage.haskell.org/package/pandoc-types-1.17.5.1/docs/Text-Pandoc-Definition.html
+See https://hackage.haskell.org/package/pandoc-types-1.17.5.4/docs/Text-Pandoc-Definition.html
 """
 module Pandoc
 
@@ -248,7 +248,7 @@ struct Unknown
     t
 end
 
-pandoc_api_version() = v"1.17.5.1"
+pandoc_api_version() = v"1.17.5-4"
 pandoc_api_version(v) = pandoc_api_version(v, Val(length(v)))
 pandoc_api_version(v, length::Val{0}) = error("Version array has to be length > 0 but got `$v` instead")
 pandoc_api_version(v, length::Val{1}) = VersionNumber(v[1])
@@ -512,78 +512,40 @@ function get_element(::Type{Header}, e)
     return Header(level, Attributes(identifier, classes, attributes), content)
 end
 
-function get_element(e)
-    t = e["t"]
-    return if t == "Header"
-        get_element(Header, e)
-    elseif t == "Link"
-        get_element(Link, e)
-    elseif t == "Space"
-        get_element(Space, e)
-    elseif t == "Emph"
-        get_element(Emph, e)
-    elseif t == "Str"
-        get_element(Str, e)
-    elseif t == "Para"
-        get_element(Para, e)
-    elseif t == "HorizontalRule"
-        get_element(HorizontalRule, e)
-    elseif t == "BulletList"
-        get_element(BulletList, e)
-    elseif t == "Plain"
-        get_element(Plain, e)
-    elseif t == "Code"
-        get_element(Code, e)
-    elseif t == "CodeBlock"
-        get_element(CodeBlock, e)
-    elseif t == "LineBreak"
-        get_element(LineBreak, e)
-    elseif t == "Cite"
-        get_element(Cite, e)
-    elseif t == "BlockQuote"
-        get_element(BlockQuote, e)
-    elseif t == "OrderedList"
-        get_element(OrderedList, e)
-    elseif t == "DefinitionList"
-        get_element(DefinitionList, e)
-    elseif t == "Strong"
-        get_element(Strong, e)
-    elseif t == "SmallCaps"
-        get_element(SmallCaps, e)
-    elseif t == "Span"
-        get_element(Span, e)
-    elseif t == "Strikeout"
-        get_element(Strikeout, e)
-    elseif t == "Image"
-        get_element(Image, e)
-    elseif t == "Table"
-        get_element(Table, e)
-    elseif t == "SoftBreak"
-        get_element(SoftBreak, e)
-    elseif t == "Quoted"
-        get_element(Quoted, e)
-    elseif t == "RawInline"
-        get_element(RawInline, e)
-    elseif t == "RawBlock"
-        get_element(RawBlock, e)
-    elseif t == "Math"
-        get_element(Math, e)
-    elseif t == "Superscript"
-        get_element(Superscript, e)
-    elseif t == "Subscript"
-        get_element(Subscript, e)
-    elseif t == "Note"
-        get_element(Note, e)
-    elseif t == "LineBlock"
-        get_element(LineBlock, e)
-    elseif t == "Div"
-        get_element(Div, e)
-    elseif t == "Null"
-        get_element(Null, e)
-    else
-        get_element(t, e)
-    end
-end
+get_element(e) = get_element(Val{Symbol(e["t"])}(), e)
+get_element(t::Val{:Header}, e) = get_element(Header, e)
+get_element(t::Val{:Link}, e) = get_element(Link, e)
+get_element(::Val{:Space}, e) = get_element(Space, e)
+get_element(::Val{:Emph}, e) = get_element(Emph, e)
+get_element(::Val{:Str}, e) = get_element(Str, e)
+get_element(::Val{:Para}, e) = get_element(Para, e)
+get_element(::Val{:HorizontalRule}, e) = get_element(HorizontalRule, e)
+get_element(::Val{:BulletList}, e) = get_element(BulletList, e)
+get_element(::Val{:Plain}, e) = get_element(Plain, e)
+get_element(::Val{:Code}, e) = get_element(Code, e)
+get_element(::Val{:CodeBlock}, e) = get_element(CodeBlock, e)
+get_element(::Val{:LineBreak}, e) = get_element(LineBreak, e)
+get_element(::Val{:Cite}, e) = get_element(Cite, e)
+get_element(::Val{:BlockQuote}, e) = get_element(BlockQuote, e)
+get_element(::Val{:OrderedList}, e) = get_element(OrderedList, e)
+get_element(::Val{:DefinitionList}, e) = get_element(DefinitionList, e)
+get_element(::Val{:Strong}, e) = get_element(Strong, e)
+get_element(::Val{:SmallCaps}, e) = get_element(SmallCaps, e)
+get_element(::Val{:Span}, e) = get_element(Span, e)
+get_element(::Val{:Strikeout}, e) = get_element(Strikeout, e)
+get_element(::Val{:Image}, e) = get_element(Image, e)
+get_element(::Val{:Table}, e) = get_element(Table, e)
+get_element(::Val{:SoftBreak}, e) = get_element(SoftBreak, e)
+get_element(::Val{:Quoted}, e) = get_element(Quoted, e)
+get_element(::Val{:RawInline}, e) = get_element(RawInline, e)
+get_element(::Val{:RawBlock}, e) = get_element(RawBlock, e)
+get_element(::Val{:Math}, e) = get_element(Math, e)
+get_element(::Val{:Superscript}, e) = get_element(Superscript, e)
+get_element(::Val{:Subscript}, e) = get_element(Subscript, e)
+get_element(::Val{:Note}, e) = get_element(Note, e)
+get_element(::Val{:LineBlock}, e) = get_element(LineBlock, e)
+get_element(::Val{:Div}, e) = get_element(Div, e)
+get_element(::Val{:Null}, e) = get_element(Null, e)
 
 function get_elements(blocks)
     elements = Element[]
