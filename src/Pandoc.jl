@@ -513,8 +513,8 @@ function get_element(::Type{Header}, e)
 end
 
 get_element(e) = get_element(Val{Symbol(e["t"])}(), e)
-get_element(t::Val{:Header}, e) = get_element(Header, e)
-get_element(t::Val{:Link}, e) = get_element(Link, e)
+get_element(::Val{:Header}, e) = get_element(Header, e)
+get_element(::Val{:Link}, e) = get_element(Link, e)
 get_element(::Val{:Space}, e) = get_element(Space, e)
 get_element(::Val{:Emph}, e) = get_element(Emph, e)
 get_element(::Val{:Str}, e) = get_element(Str, e)
