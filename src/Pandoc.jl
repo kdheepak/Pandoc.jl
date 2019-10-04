@@ -246,6 +246,7 @@ struct Unknown
     t
 end
 
+pandoc_api_version() = v"1.17.5.1"
 pandoc_api_version(v) = pandoc_api_version(v, Val(length(v)))
 pandoc_api_version(v, length::Val{0}) = error("Version array has to be length > 0 but got `$v` instead")
 pandoc_api_version(v, length::Val{1}) = VersionNumber(v[1])
