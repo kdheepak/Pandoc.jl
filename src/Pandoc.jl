@@ -4,6 +4,8 @@ __precompile__(true)
     Pandoc
 
 Pandoc wrapper to read JSON AST from `pandoc`
+
+See https://hackage.haskell.org/package/pandoc-types-1.17.5.1/docs/Text-Pandoc-Definition.html
 """
 module Pandoc
 
