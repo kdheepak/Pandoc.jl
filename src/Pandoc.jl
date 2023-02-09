@@ -9,17 +9,18 @@ See https://hackage.haskell.org/package/pandoc-types-1.17.5.4/docs/Text-Pandoc-D
 """
 module Pandoc
 
-import JSON
+import JSON3
 import Markdown
+using pandoc_jll
 
-const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", "pandoc")
+const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
 
-@enum Alignment AlignLeft=1 AlignRight=2 AlignCenter=3 AlignDefault=4
-@enum ListNumberStyle DefaultStyle=1 Example=2 Decimal=3 LowerRoman=4 UpperRoman=5 LowerAlpha=6 UpperAlpha=7
-@enum ListNumberDelim DefaultDelim=1 Period=2 OneParen=3 TwoParens=4
-@enum QuoteType SingleQuote=1 DoubleQuote=2
-@enum MathType DisplayMath=1 InlineMath=2
-@enum CitationMode AuthorInText=1 SuppressAuthor=2 NormalCitation=3
+@enum Alignment AlignLeft = 1 AlignRight = 2 AlignCenter = 3 AlignDefault = 4
+@enum ListNumberStyle DefaultStyle = 1 Example = 2 Decimal = 3 LowerRoman = 4 UpperRoman = 5 LowerAlpha = 6 UpperAlpha = 7
+@enum ListNumberDelim DefaultDelim = 1 Period = 2 OneParen = 3 TwoParens = 4
+@enum QuoteType SingleQuote = 1 DoubleQuote = 2
+@enum MathType DisplayMath = 1 InlineMath = 2
+@enum CitationMode AuthorInText = 1 SuppressAuthor = 2 NormalCitation = 3
 
 abstract type Element end
 
@@ -32,10 +33,10 @@ const TableCell = Vector{Block}
 struct Attributes
     identifier::String
     classes::Vector{String}
-    attributes::Vector{Pair{String, String}}
+    attributes::Vector{Pair{String,String}}
 end
 function Attributes(identifier, classes, attributes::Vector{Any})
-    attributes = Pair{String, String}[attr[1] => attr[2] for attr in attributes]
+    attributes = Pair{String,String}[attr[1] => attr[2] for attr in attributes]
     return Attributes(identifier, classes, attributes)
 end
 Attributes() = Attributes("", [], [],)
@@ -57,7 +58,7 @@ end
 
 """Plain text, not a paragraph"""
 struct Plain <: Block
-    content:: Vector{Inline}
+    content::Vector{Inline}
 end
 
 """Paragraph"""
@@ -102,7 +103,7 @@ end
 """
 Definition list Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)"""
 struct DefinitionList <: Block
-    content::Vector{Pair{Vector{Inline}, Vector{Vector{Block}}}}
+    content::Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}
 end
 
 """Header - level (integer) and text (inlines)"""
@@ -257,9 +258,9 @@ pandoc_api_version(v, length::Val{3}) = VersionNumber(v[1], v[2], v[3])
 pandoc_api_version(v, length) = VersionNumber(v[1], v[2], v[3], tuple(v[4:end]...))
 
 mutable struct Document
-    data::Dict{String, Any}
+    data::Dict{Symbol,Any}
     pandoc_api_version::VersionNumber
-    meta::Dict{String, Any}
+    meta::Dict{String,Any}
     blocks::Vector{Element}
 end
 
@@ -332,19 +333,19 @@ function get_element(::Type{Table}, e)
     c = e["c"]
 
     content = Inline[get_element(i) for i in c[1]]
-    alignments = Alignment[ eval(Symbol(a["t"])) for a in c[2] ]
+    alignments = Alignment[eval(Symbol(a["t"])) for a in c[2]]
     widths = Float64[w for w in c[3]]
     headers = TableCell[]
     rows = Vector{TableCell}[]
 
     for blocks in c[4]
-        push!(headers, Block[ get_element(b) for b in blocks ])
+        push!(headers, Block[get_element(b) for b in blocks])
     end
 
     for list_of_blocks in c[5]
         row = TableCell[]
         for blocks in list_of_blocks
-            push!(row, Block[ get_element(b) for b in blocks ])
+            push!(row, Block[get_element(b) for b in blocks])
         end
         push!(rows, row)
     end
@@ -354,9 +355,9 @@ end
 
 function get_element(::Type{Span}, e)
     return Span(
-                Attributes(e["c"][1]...),
-                Inline[get_element(i) for i in e["c"][2]]
-               )
+        Attributes(e["c"][1]...),
+        Inline[get_element(i) for i in e["c"][2]]
+    )
 end
 
 function get_element(::Type{Image}, e)
@@ -380,7 +381,7 @@ end
 
 function get_element(::Type{DefinitionList}, e)
     c = e["c"]
-    dl = Vector{Pair{Vector{Inline}, Vector{Vector{Block}}}}( [] )
+    dl = Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}([])
     for items in c
         vector_blocks = Vector{Block}[]
         for blocks in items[2]
@@ -485,7 +486,7 @@ function get_element(::Type{Link}, e)
     c = e["c"]
     identifier = c[1][1]::String
     classes = String[s for s in c[1][2]]
-    attributes = Pair[ (String(k) => String(v)) for (k,v) in c[1][3] ]
+    attributes = Pair[(String(k) => String(v)) for (k, v) in c[1][3]]
 
     content = Element[]
     for se in c[2]
@@ -502,7 +503,7 @@ function get_element(::Type{Header}, e)
     level = c[1]::Int
     identifier = c[2][1]::String
     classes = String[s for s in c[2][2]]
-    attributes = Pair[ (String(k) => String(v)) for (k,v) in c[2][3] ]
+    attributes = Pair[(String(k) => String(v)) for (k, v) in c[2][3]]
 
     content = Element[]
     for se in c[3]
@@ -558,24 +559,24 @@ end
 function parse(markdown)
     cmd = pipeline(`echo $markdown`, `$PANDOC_JL_EXECUTABLE -t json`)
     data = read(cmd, String)
-    return Document(JSON.parse(data))
+    return Document(JSON3.read(data))
 end
 
 function parse_file(filename)
     cmd = `$PANDOC_JL_EXECUTABLE -t json $filename`
     data = read(cmd, String)
-    return Document(JSON.parse(data))
+    return Document(JSON3.read(data))
 end
 
-exists() = run(`which $PANDOC_JL_EXECUTABLE`, wait=false) |> success
+exists() = Sys.which(PANDOC_JL_EXECUTABLE) !== nothing
 
 ### Convert
 
 function Base.convert(::Type{Document}, md::Markdown.MD)
 
     pav = v"1.17.5-4"
-    meta = Dict{String, Any}()
-    data = Dict{String, Any}()
+    meta = Dict{String,Any}()
+    data = Dict{String,Any}()
     blocks = Element[]
 
     for e in md.content
@@ -591,7 +592,7 @@ Base.convert(::Type{Inline}, e::AbstractString) = convert(Str, e)
 Base.convert(::Type{Str}, e::AbstractString) = Str(e)
 
 Base.convert(::Type{Element}, e::Markdown.Header) = convert(Header, e)
-function Base.convert(::Type{Header}, e::Markdown.Header{V}) where V
+function Base.convert(::Type{Header}, e::Markdown.Header{V}) where {V}
     content = Element[]
 
     for s in split(e.text[1])
@@ -603,12 +604,12 @@ function Base.convert(::Type{Header}, e::Markdown.Header{V}) where V
     end
 
     return Header(
-        V #= level =#,
+        V, #= level =#
         Attributes(
-                replace(lowercase(e.text[1]), " " => "-"),
-                [],
-                []
-               ),
+            replace(lowercase(e.text[1]), " " => "-"),
+            [],
+            []
+        ),
         content,
     )
 end
@@ -635,10 +636,10 @@ function Base.convert(::Type{Link}, e::Markdown.Link)
     target = Target(e.url, "")
 
     return Link(
-                Attributes(),
-                content,
-                target,
-               )
+        Attributes(),
+        content,
+        target,
+    )
 end
 
 Base.convert(::Type{Element}, e::Markdown.Italic) = convert(Emph, e)
@@ -650,7 +651,7 @@ Base.convert(::Type{Inline}, e::Markdown.Bold) = convert(Strong, e)
 Base.convert(::Type{Strong}, e::Markdown.Bold) = Strong(Inline[i for i in e.text])
 
 Base.convert(::Type{Element}, e::Markdown.Paragraph) = convert(Para, e)
-function Base.convert(::Type{T}, e::Markdown.Paragraph) where T<:Union{Para,Plain}
+function Base.convert(::Type{T}, e::Markdown.Paragraph) where {T<:Union{Para,Plain}}
     content = Inline[]
     for c in e.content
         if c isa AbstractString
@@ -763,15 +764,15 @@ end
 # fallback
 compare(x, y) = false
 
-function compare(x::T, y::T) where T
+function compare(x::T, y::T) where {T}
     equality = true
     for fieldname in fieldnames(T)
-        equality = equality && ( getfield(x, fieldname) == getfield(y, fieldname) )
+        equality = equality && (getfield(x, fieldname) == getfield(y, fieldname))
     end
     return equality
 end
 
-Base.:(==)(x::T, y::T) where T<:Pandoc.Element = compare(x, y)
+Base.:(==)(x::T, y::T) where {T<:Pandoc.Element} = compare(x, y)
 Base.:(==)(x::Attributes, y::Attributes) = compare(x, y)
 Base.:(==)(x::Citation, y::Citation) = compare(x, y)
 Base.:(==)(x::ListAttributes, y::ListAttributes) = compare(x, y)
