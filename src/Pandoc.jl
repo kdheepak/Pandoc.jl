@@ -5,22 +5,32 @@ __precompile__(true)
 
 Pandoc wrapper to read JSON AST from `pandoc`
 
-See https://hackage.haskell.org/package/pandoc-types-1.17.5.4/docs/Text-Pandoc-Definition.html
+See https://hackage.haskell.org/package/pandoc-types-1.23/docs/Text-Pandoc-Definition.html
 """
 module Pandoc
 
-import JSON3
-import Markdown
+using JSON3
+using Markdown
 using pandoc_jll
+using EnumX
 
 const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
 
-@enum Alignment AlignLeft = 1 AlignRight = 2 AlignCenter = 3 AlignDefault = 4
-@enum ListNumberStyle DefaultStyle = 1 Example = 2 Decimal = 3 LowerRoman = 4 UpperRoman = 5 LowerAlpha = 6 UpperAlpha = 7
-@enum ListNumberDelim DefaultDelim = 1 Period = 2 OneParen = 3 TwoParens = 4
-@enum QuoteType SingleQuote = 1 DoubleQuote = 2
-@enum MathType DisplayMath = 1 InlineMath = 2
-@enum CitationMode AuthorInText = 1 SuppressAuthor = 2 NormalCitation = 3
+@enum Alignment AlignLeft AlignRight AlignCenter AlignDefault
+
+"""Style of list numbers."""
+@enum ListNumberStyle DefaultStyle Example Decimal LowerRoman UpperRoman LowerAlpha UpperAlpha
+
+"""Delimiter of list numbers."""
+@enum ListNumberDelim DefaultDelim Period OneParen TwoParens
+
+"""Type of quotation marks to use in Quoted inline."""
+@enum QuoteType SingleQuote DoubleQuote
+
+"""Type of math element (display or inline)."""
+@enum MathType DisplayMath InlineMath
+
+@enum CitationMode AuthorInText SuppressAuthor NormalCitation
 
 abstract type Element end
 
@@ -28,8 +38,10 @@ abstract type Inline <: Element end
 abstract type Block <: Element end
 
 const Format = String
+const Text = String
 const TableCell = Vector{Block}
 
+"""Attributes: identifier, classes, key-value pairs"""
 struct Attributes
     identifier::String
     classes::Vector{String}
@@ -42,14 +54,19 @@ end
 Attributes() = Attributes("", [], [],)
 
 struct Citation
-    mode::CitationMode
-    prefix::Vector{Inline}
-    hash::Int
     id::String
+    prefix::Vector{Inline}
     suffix::Vector{Inline}
+    mode::CitationMode
     note_number::Int
+    hash::Int
 end
 
+"""
+List attributes.
+
+The first element of the triple is the start number of the list.
+"""
 struct ListAttributes
     number::Int
     style::ListNumberStyle
@@ -74,14 +91,14 @@ end
 """Code block (literal) with attributes"""
 struct CodeBlock <: Block
     attr::Attributes
-    content::String
+    content::Text
 end
 CodeBlock(content) = CodeBlock(Attributes(), content)
 
 """Raw block"""
 struct RawBlock <: Block
     format::Format
-    content::String
+    content::Text
 end
 
 """Block quote (list of blocks)"""
@@ -101,7 +118,7 @@ struct BulletList <: Block
 end
 
 """
-Definition list Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)"""
+Definition list. Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)"""
 struct DefinitionList <: Block
     content::Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}
 end
@@ -118,8 +135,86 @@ Header(level, content) = Header(level, Attributes(), content)
 """Horizontal rule"""
 struct HorizontalRule <: Block end
 
-"""Table, with caption, column alignments (required), relative column widths (0 = default), column headers (each a list of blocks), and rows (each a list of lists of blocks)"""
+
+"""The width of a table column, as a percentage of the text width."""
+struct ColWidth
+    width::Union{Float64,Symbol}
+end
+
+"""The specification for a single table column."""
+struct ColSpec
+    alignment::Alignment
+    colwidth::ColWidth
+end
+
+"""A table cell."""
+struct Cell
+    attr::Attributes
+    alignment::Alignment
+    rowspan::RowSpan
+    colspan::ColSpan
+    content::Vector{Block}
+end
+
+struct Row
+    attr::Attributes
+    cells::Vector{Cell}
+end
+
+"""The head of a table."""
+struct TableHead
+    attr::Attributes
+    rows::Vector{Row}
+end
+
+"""
+The number of columns taken up by the row head of each row of a 'TableBody'. The row body takes up the remaining columns.
+"""
+const RowHeadColumns = Int
+
+"""
+A body of a table, with an intermediate head, intermediate body,
+and the specified number of row header columns in the intermediate
+body.
+"""
+struct TableBody
+    attr::Attributes
+    rowheadcolumns::RowHeadColumns
+    head::Vector{Row}
+    content::Vector{Row}
+end
+
+"""The foot of a table."""
+struct TableFoot
+    attr::Attributes
+    content::Vector{Row}
+end
+
+"""A short caption, for use in, for instance, lists of figures."""
+struct ShortCaption
+    content::Vector{Inline}
+end
+
+"""The caption of a table or figure, with optional short caption."""
+struct Caption
+    caption::Union{ShortCaption,Nothing}
+    content::Vector{Block}
+end
+
+"""The number of rows occupied by a cell; the height of a cell."""
+const RowSpan = Int
+
+"""The number of columns occupied by a cell; the width of a cell."""
+const ColSpan = Int
+
+"""
+Table, with attributes, caption, optional short caption,
+column alignments and widths (required), table head, table
+bodies, and table foot
+"""
 struct Table <: Block
+    attr::Attributes
+    caption::Caption
     content::Vector{Inline}
     alignments::Vector{Alignment}
     widths::Vector{Float64}
@@ -136,18 +231,24 @@ Div(content) = Div(Attributes(), content)
 
 struct Null <: Block end
 
+"""Link target (URL, title)."""
 struct Target
-    url::String
-    title::String
+    url::Text
+    title::Text
 end
 
 """Text (string)"""
 struct Str <: Inline
-    content::String
+    content::Text
 end
 
 """Emphasized text (list of inlines)"""
 struct Emph <: Inline
+    content::Vector{Inline}
+end
+
+"""Underlined text (list of inlines)"""
+struct Underline <: Inline
     content::Vector{Inline}
 end
 
@@ -191,7 +292,7 @@ end
 """Inline code (literal)"""
 struct Code <: Inline
     attr::Attributes
-    content::String
+    content::Text
 end
 Code(content) = Code(Attributes(), content)
 
@@ -207,13 +308,13 @@ struct LineBreak <: Inline end
 """TeX math (literal)"""
 struct Math <: Inline
     math_type::MathType
-    content::String
+    content::Text
 end
 
 """Raw inline"""
 struct RawInline <: Inline
     format::Format
-    content::String
+    content::Text
 end
 
 """Hyperlink: alt text (list of inlines), target"""
