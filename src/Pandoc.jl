@@ -10,9 +10,11 @@ See https://hackage.haskell.org/package/pandoc-types-1.23/docs/Text-Pandoc-Defin
 module Pandoc
 
 using JSON3
+using StructTypes
 using Markdown
 using pandoc_jll
 using EnumX
+using InlineTest
 
 const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
 
@@ -352,7 +354,7 @@ struct Unknown
     t
 end
 
-pandoc_api_version() = v"1.17.5-4"
+pandoc_api_version() = v"1.23"
 pandoc_api_version(v) = pandoc_api_version(v, Val(length(v)))
 pandoc_api_version(v, length::Val{0}) = error("Version array has to be length > 0 but got `$v` instead")
 pandoc_api_version(v, length::Val{1}) = VersionNumber(v[1])
@@ -365,10 +367,13 @@ const MetaValue = Any
 
 Base.@kwdef mutable struct Document
     data::Dict{Symbol,Any} = Dict()
-    pandoc_api_version::VersionNumber = v"1.17.5-4"
+    pandoc_api_version::VersionNumber = v"1.23"
     meta::Dict{String,MetaValue} = Dict()
     blocks::Vector{Block} = []
 end
+StructTypes.StructType(::Type{Document}) = StructTypes.Mutable()
+
+Document(data::String) = JSON3.read!(data, Document())
 
 function Document(data)
     pav = pandoc_api_version(data["pandoc-api-version"])
@@ -377,5 +382,15 @@ function Document(data)
     return Document(data, pav, meta, blocks)
 end
 
+@testset "document" begin
+    @test Document("""
+    {
+        "pandoc-api-version": "1.23",
+        "meta": {},
+        "blocks": [],
+        "data": {}
+    }
+    """) isa Document
+end
 
 end # module
