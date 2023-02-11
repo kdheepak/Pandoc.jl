@@ -147,6 +147,9 @@ struct ColSpec
     colwidth::ColWidth
 end
 
+const RowSpan = Int
+const ColSpan = Int
+
 """A table cell."""
 struct Cell
     attr::Attributes
