@@ -6,19 +6,19 @@ You can install it using your favorite package manager.
 To use it in Julia, first add it:
 
 ```
-(v1.1)> add Pandoc
+(v1.8)> add Pandoc
 ```
 
 Then you can run the following:
 
 ```
 julia> using Pandoc
-julia> Pandoc.parse("""# header level 1""")
+julia> Pandoc.Document("""# header level 1""")
 ```
 
 You can also load a file from disk:
 
 ```
-julia> using Pandoc
-julia> Pandoc.parse_file("./path/to/markdown_file.md")
+julia> using Pandoc, FilePaths
+julia> Pandoc.Document(p"./path/to/markdown_file.md")
 ```
