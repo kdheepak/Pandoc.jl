@@ -7,6 +7,5 @@
 To install Pandoc.jl, open the Julia package manager prompt and type:
 
 ```
-(v1.1) pkg> add Pandoc
+(v1.8) pkg> add Pandoc
 ```
-
