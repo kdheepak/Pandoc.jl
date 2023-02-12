@@ -5,6 +5,7 @@ version = "0.2.5"
 
 [deps]
 EnumX = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
+FilePathsBase = "48062228-2e41-5def-b9a4-89aafe57970f"
 InlineTest = "bd334432-b1e7-49c7-a2dc-dd9149e4ebd6"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
