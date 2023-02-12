@@ -15,11 +15,18 @@ using EnumX
 using FilePathsBase
 using InlineTest
 using JSON3
-using StructTypes
 
 using pandoc_jll
 
 const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
+const FORMATS = Dict{String,String}(
+  "md" => "markdown",
+  "markdown" => "markdown",
+  "qmd" => "markdown",
+  "wiki" => "wiki",
+  "tex" => "latex",
+  "latex" => "latex",
+)
 
 @enum Alignment AlignLeft AlignRight AlignCenter AlignDefault
 Alignment() = AlignDefault
@@ -51,7 +58,22 @@ Type of math element (display or inline).
 abstract type Element end
 
 abstract type Inline <: Element end
+function Inline(e::Dict)
+  if e["t"] == "Str"
+    Str(e["c"])
+  else
+    error("Not implemented")
+  end
+end
+
 abstract type Block <: Element end
+function Block(e::Dict)
+  if e["t"] == "Header"
+    Header(e["c"]...)
+  else
+    error("Not implemented")
+  end
+end
 
 const Format = String
 const Text = String
@@ -63,8 +85,9 @@ Attr: identifier, classes, key-value pairs
 Base.@kwdef struct Attr
   identifier::String = ""
   classes::Vector{String} = []
-  attributes::Vector{Pair{String,String}} = []
+  attributes::Vector{Tuple{String,String}} = []
 end
+Attr(i, c, a::Vector{Any}) = Attr(i, c, map(x -> (x[1], x[2]), a))
 
 struct Citation
   id::String
@@ -156,13 +179,12 @@ end
 """
 Header - level (integer) and text (inlines)
 """
-struct Header <: Block
-  level::Int
-  attr::Attr
-  content::Vector{Element}
+Base.@kwdef struct Header <: Block
+  level::Int = 1
+  attr::Attr = Attr()
+  content::Vector{Inline} = []
 end
-Header(level) = Header(level, Attr(), [])
-Header(level, content) = Header(level, Attr(), content)
+Header(level, attr, content::Vector{Any}) = Header(level, Attr(attr...), map(Inline, content))
 
 """
 Horizontal rule
@@ -205,9 +227,9 @@ Base.@kwdef struct Cell
   content::Vector{Block} = []
 end
 
-struct Row
-  attr::Attr
-  cells::Vector{Cell}
+Base.@kwdef struct Row
+  attr::Attr = Attr()
+  cells::Vector{Cell} = []
 end
 
 """
@@ -246,16 +268,16 @@ end
 """
 A short caption, for use in, for instance, lists of figures.
 """
-struct ShortCaption
-  content::Vector{Inline}
+Base.@kwdef struct ShortCaption
+  content::Vector{Inline} = []
 end
 
 """
 The caption of a table or figure, with optional short caption.
 """
-struct Caption
-  caption::Union{ShortCaption,Nothing}
-  content::Vector{Block}
+Base.@kwdef struct Caption
+  caption::ShortCaption = ShortCaption()
+  content::Vector{Block} = []
 end
 
 """
@@ -272,111 +294,109 @@ Base.@kwdef struct Table <: Block
   foot::TableFoot = TableFoot()
 end
 
-struct Figure <: Block
-  attr::Attr
-  caption::Caption
-  content::Vector{Block}
+Base.@kwdef struct Figure <: Block
+  attr::Attr = Attr()
+  caption::Caption = Caption()
+  content::Vector{Block} = []
 end
 
 """
 Generic block container with attributes
 """
-struct Div <: Block
-  attr::Attr
-  content::Vector{Block}
+Base.@kwdef struct Div <: Block
+  attr::Attr = Attr()
+  content::Vector{Block} = []
 end
-Div(content) = Div(Attr(), content)
 
 struct Null <: Block end
 
 """
 Link target (URL, title).
 """
-struct Target
-  url::Text
-  title::Text
+Base.@kwdef struct Target
+  url::Text = ""
+  title::Text = ""
 end
 
 """
 Text (string)
 """
-struct Str <: Inline
-  content::Text
+Base.@kwdef struct Str <: Inline
+  content::Text = ""
 end
 
 """
 Emphasized text (list of inlines)
 """
-struct Emph <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Emph <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Underlined text (list of inlines)
 """
-struct Underline <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Underline <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Strongly emphasized text (list of inlines)
 """
-struct Strong <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Strong <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Strikeout text (list of inlines)
 """
-struct Strikeout <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Strikeout <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Superscripted text (list of inlines)
 """
-struct Superscript <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Superscript <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Subscripted text (list of inlines)
 """
-struct Subscript <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct Subscript <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Small caps text (list of inlines)
 """
-struct SmallCaps <: Inline
-  content::Vector{Inline}
+Base.@kwdef struct SmallCaps <: Inline
+  content::Vector{Inline} = []
 end
 
 """
 Quoted text (list of inlines)
 """
-struct Quoted <: Inline
+Base.@kwdef struct Quoted <: Inline
   quote_type::QuoteType
-  content::Vector{Inline}
+  content::Vector{Inline} = []
 end
 
 """
 Citation (list of inlines)
 """
-struct Cite <: Inline
-  citations::Vector{Citation}
-  content::Vector{Inline}
+Base.@kwdef struct Cite <: Inline
+  citations::Vector{Citation} = []
+  content::Vector{Inline} = []
 end
 
 """
 Inline code (literal)
 """
-struct Code <: Inline
-  attr::Attr
-  content::Text
+Base.@kwdef struct Code <: Inline
+  attr::Attr = Attr()
+  content::Text = ""
 end
-Code(content) = Code(Attr(), content)
 
 """
 Inter-word space
@@ -396,54 +416,51 @@ struct LineBreak <: Inline end
 """
 TeX math (literal)
 """
-struct Math <: Inline
+Base.@kwdef struct Math <: Inline
   math_type::MathType
-  content::Text
+  content::Text = ""
 end
 
 """
 Raw inline
 """
-struct RawInline <: Inline
-  format::Format
-  content::Text
+Base.@kwdef struct RawInline <: Inline
+  format::Format = ""
+  content::Text = ""
 end
 
 """
 Hyperlink: alt text (list of inlines), target
 """
-struct Link <: Inline
-  attr::Attr
-  content::Vector{Inline}
-  target::Target
+Base.@kwdef struct Link <: Inline
+  attr::Attr = Attr()
+  content::Vector{Inline} = []
+  target::Target = Target()
 end
-Link(content, target) = Link(Attr(), content, target)
 
 """
 Image: alt text (list of inlines), target
 """
-struct Image <: Inline
-  attr::Attr
-  content::Vector{Inline}
-  target::Target
+Base.@kwdef struct Image <: Inline
+  attr::Attr = Attr()
+  content::Vector{Inline} = []
+  target::Target = Target()
 end
-Image(content, target) = Image(Attr(), content, target)
 
 """
 Footnote or endnote
 """
-struct Note <: Inline
-  content::Vector{Block}
+Base.@kwdef struct Note <: Inline
+  content::Vector{Block} = []
 end
 
 """
 Generic inline container with attributes
 """
-struct Span <: Inline
-  attr::Attr
-  content::Vector{Inline}
+Base.@kwdef struct Span <: Inline
+  attr::Attr = Attr()
+  content::Vector{Inline} = []
 end
-Span(content) = Span(Attr(), content)
 
 struct Unknown
   e::Any
@@ -467,7 +484,6 @@ Base.@kwdef mutable struct Document
   meta::Dict{String,MetaValue} = Dict()
   blocks::Vector{Block} = []
 end
-StructTypes.StructType(::Type{Document}) = StructTypes.Mutable()
 
 Document(data::String) = JSON3.read(data, Document)
 
@@ -484,11 +500,19 @@ Document(data::String) = JSON3.read(data, Document)
 end
 
 function Document(data::AbstractPath)
-  if extension(data) == "json"
+  ext = extension(data)
+  if ext == "json"
     JSON3.read(read(data), Document)
   else
-    throw(ErrorException("Not implemented yet"))
+    Document(JSON3.read(read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String), Dict))
   end
+end
+
+function Document(data::Dict)
+  blocks = map(data["blocks"]) do e
+    Block(e)
+  end
+  Document(; pandoc_api_version = pandoc_api_version(data["pandoc-api-version"]), meta = data["meta"], blocks)
 end
 
 end # module
