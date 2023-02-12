@@ -13,6 +13,7 @@ using Markdown
 
 using EnumX
 using FilePathsBase
+using FilePathsBase: /
 using InlineTest
 using JSON3
 
@@ -28,32 +29,32 @@ const FORMATS = Dict{String,String}(
   "latex" => "latex",
 )
 
-@enum Alignment AlignLeft AlignRight AlignCenter AlignDefault
-Alignment() = AlignDefault
+@enumx Alignment AlignLeft AlignRight AlignCenter AlignDefault
+Alignment.T() = AlignDefault
 
 """
 Style of list numbers.
 """
-@enum ListNumberStyle DefaultStyle Example Decimal LowerRoman UpperRoman LowerAlpha UpperAlpha
-ListNumberStyle() = DefaultStyle
+@enumx ListNumberStyle DefaultStyle Example Decimal LowerRoman UpperRoman LowerAlpha UpperAlpha
+ListNumberStyle.T() = DefaultStyle
 
 """
 Delimiter of list numbers.
 """
-@enum ListNumberDelim DefaultDelim Period OneParen TwoParens
-ListNumberDelim() = DefaultDelim
+@enumx ListNumberDelim DefaultDelim Period OneParen TwoParens
+ListNumberDelim.T() = DefaultDelim
 
 """
 Type of quotation marks to use in Quoted inline.
 """
-@enum QuoteType SingleQuote DoubleQuote
+@enumx QuoteType SingleQuote DoubleQuote
 
 """
 Type of math element (display or inline).
 """
-@enum MathType DisplayMath InlineMath
+@enumx MathType DisplayMath InlineMath
 
-@enum CitationMode AuthorInText SuppressAuthor NormalCitation
+@enumx CitationMode AuthorInText SuppressAuthor NormalCitation
 
 abstract type Element end
 
@@ -61,6 +62,44 @@ abstract type Inline <: Element end
 function Inline(e::Dict)
   if e["t"] == "Str"
     Str(e["c"])
+  elseif e["t"] == "Emph"
+    Emph(e["c"])
+  elseif e["t"] == "Underline"
+    Underline(e["c"])
+  elseif e["t"] == "Strong"
+    Strong(e["c"])
+  elseif e["t"] == "Strikeout"
+    Strikeout(e["c"])
+  elseif e["t"] == "Superscript"
+    Superscript(e["c"])
+  elseif e["t"] == "Subscript"
+    Subscript(e["c"])
+  elseif e["t"] == "SmallCaps"
+    SmallCaps(e["c"])
+  elseif e["t"] == "Quoted"
+    Quoted(e["c"]...)
+  elseif e["t"] == "Cite"
+    Cite(e["c"]...)
+  elseif e["t"] == "Code"
+    Code(e["c"]...)
+  elseif e["t"] == "Space"
+    Space()
+  elseif e["t"] == "SoftBreak"
+    SoftBreak()
+  elseif e["t"] == "LineBreak"
+    LineBreak()
+  elseif e["t"] == "Math"
+    Math(e["c"]...)
+  elseif e["t"] == "RawInline"
+    RawInline(e["c"]...)
+  elseif e["t"] == "Link"
+    Link(e["c"]...)
+  elseif e["t"] == "Image"
+    Image(e["c"]...)
+  elseif e["t"] == "Note"
+    Note(e["c"])
+  elseif e["t"] == "Span"
+    Span(e["c"]...)
   else
     error("Not implemented")
   end
@@ -68,10 +107,36 @@ end
 
 abstract type Block <: Element end
 function Block(e::Dict)
-  if e["t"] == "Header"
+  if e["t"] == "Plain"
+    Plain(e["c"])
+  elseif e["t"] == "Para"
+    Para(map(Inline, e["c"]))
+  elseif e["t"] == "LineBlock"
+    LineBlock(e["c"]...)
+  elseif e["t"] == "CodeBlock"
+    CodeBlock(e["c"]...)
+  elseif e["t"] == "RawBlock"
+    RawBlock(e["c"]...)
+  elseif e["t"] == "BlockQuote"
+    BlockQuote(e["c"])
+  elseif e["t"] == "OrderedList"
+    OrderedList(e["c"]...)
+  elseif e["t"] == "BulletList"
+    BulletList(e["c"])
+  elseif e["t"] == "DefinitionList"
+    DefinitionList(e["c"])
+  elseif e["t"] == "Header"
     Header(e["c"]...)
+  elseif e["t"] == "HorizontalRule"
+    HorizontalRule()
+  elseif e["t"] == "Table"
+    Table(e["c"]...)
+  elseif e["t"] == "Figure"
+    Figure(e["c"]...)
+  elseif e["t"] == "Div"
+    Div(e["c"]...)
   else
-    error("Not implemented")
+    error("Not implemented for $e")
   end
 end
 
@@ -93,7 +158,7 @@ struct Citation
   id::String
   prefix::Vector{Inline}
   suffix::Vector{Inline}
-  mode::CitationMode
+  mode::CitationMode.T
   note_number::Int
   hash::Int
 end
@@ -105,8 +170,33 @@ The first element of the triple is the start number of the list.
 """
 Base.@kwdef struct ListAttributes
   number::Int = 1
-  style::ListNumberStyle = ListNumberStyle()
-  delim::ListNumberDelim = ListNumberDelim()
+  style::ListNumberStyle.T = ListNumberStyle.T()
+  delim::ListNumberDelim.T = ListNumberDelim.T()
+end
+function ListAttributes(number, style::Dict, delim::Dict)
+  style = if style["t"] == "Decimal"
+    ListNumberStyle.Decimal
+  elseif style["t"] == "LowerRoman"
+    ListNumberStyle.LowerRoman
+  elseif style["t"] == "UpperRoman"
+    ListNumberStyle.UpperRoman
+  elseif style["t"] == "LowerAlpha"
+    ListNumberStyle.LowerAlpha
+  elseif style["t"] == "UpperAlpha"
+    ListNumberStyle.UpperAlpha
+  else
+    error("Unknown $(style["t"])")
+  end
+  delim = if delim["t"] == "Period"
+    ListNumberDelim.Period
+  elseif delim["t"] == "OneParen"
+    ListNumberDelim.OneParen
+  elseif delim["t"] == "TwoParens"
+    ListNumberDelim.TwoParens
+  else
+    error("Unknown $(delim["t"])")
+  end
+  ListAttributes(number, style, delim)
 end
 
 """
@@ -115,6 +205,7 @@ Plain text, not a paragraph
 struct Plain <: Block
   content::Vector{Inline}
 end
+Plain(content::Vector{Any}) = Plain(map(Inline, content))
 
 """
 Paragraph
@@ -137,7 +228,7 @@ struct CodeBlock <: Block
   attr::Attr
   content::Text
 end
-CodeBlock(content) = CodeBlock(Attr(), content)
+CodeBlock(attr::Vector{Any}, content) = CodeBlock(Attr(attr...), content)
 
 """
 Raw block
@@ -153,6 +244,7 @@ Block quote (list of blocks)
 struct BlockQuote <: Block
   content::Vector{Block}
 end
+BlockQuote(content::Vector{Any}) = BlockQuote(map(Block, content))
 
 """
 Ordered list (attributes and a list of items, each a list of blocks)
@@ -161,6 +253,8 @@ struct OrderedList <: Block
   attr::ListAttributes
   content::Vector{Vector{Block}}
 end
+OrderedList(attr::Vector{Any}, content::Vector{Any}) =
+  OrderedList(ListAttributes(attr...), [map(Block, c) for c in content])
 
 """
 Bullet list (list of items, each a list of blocks)
@@ -168,6 +262,7 @@ Bullet list (list of items, each a list of blocks)
 struct BulletList <: Block
   content::Vector{Vector{Block}}
 end
+BulletList(content::Vector{Any}) = BulletList([map(Block, c) for c in content])
 
 """
 Definition list. Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)
@@ -175,6 +270,11 @@ Definition list. Each list item is a pair consisting of a term (a list of inline
 struct DefinitionList <: Block
   content::Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}
 end
+DefinitionList(content::Vector{Any}) = DefinitionList(map(content) do (is, bs)
+  is = map(Inline, is)
+  bs = [map(Block, b) for b in bs]
+  is => bs
+end)
 
 """
 Header - level (integer) and text (inlines)
@@ -202,7 +302,7 @@ end
 The specification for a single table column.
 """
 Base.@kwdef struct ColSpec
-  alignment::Alignment = Alignment()
+  alignment::Alignment.T = Alignment.T()
   colwidth::ColWidth = ColWidth()
 end
 
@@ -221,7 +321,7 @@ A table cell.
 """
 Base.@kwdef struct Cell
   attr::Attr = Attr()
-  alignment::Alignment = AlignDefault
+  alignment::Alignment.T = Alignment.T()
   rowspan::RowSpan = 1
   colspan::ColSpan = 1
   content::Vector{Block} = []
@@ -269,7 +369,7 @@ end
 A short caption, for use in, for instance, lists of figures.
 """
 Base.@kwdef struct ShortCaption
-  content::Vector{Inline} = []
+  content::Union{Nothing,Vector{Inline}} = nothing
 end
 
 """
@@ -279,6 +379,8 @@ Base.@kwdef struct Caption
   caption::ShortCaption = ShortCaption()
   content::Vector{Block} = []
 end
+Caption(_::Nothing, content::Vector{Any}) = Caption(ShortCaption(), map(Block, content))
+Caption(caption::Vector{Any}, content::Vector{Any}) = Caption(ShortCaption(map(Inline, caption)), map(Block, content))
 
 """
 Table, with attributes, caption, optional short caption,
@@ -299,6 +401,8 @@ Base.@kwdef struct Figure <: Block
   caption::Caption = Caption()
   content::Vector{Block} = []
 end
+Figure(attr::Vector{Any}, caption, content::Vector{Any}) =
+  Figure(Attr(attr...), Caption(caption...), map(Block, content))
 
 """
 Generic block container with attributes
@@ -307,6 +411,7 @@ Base.@kwdef struct Div <: Block
   attr::Attr = Attr()
   content::Vector{Block} = []
 end
+Div(attr::Vector{Any}, content::Vector{Any}) = Div(Attr(attr...), map(Block, content))
 
 struct Null <: Block end
 
@@ -331,6 +436,7 @@ Emphasized text (list of inlines)
 Base.@kwdef struct Emph <: Inline
   content::Vector{Inline} = []
 end
+Emph(content::Vector{Any}) = Emph(map(Inline, content))
 
 """
 Underlined text (list of inlines)
@@ -345,6 +451,7 @@ Strongly emphasized text (list of inlines)
 Base.@kwdef struct Strong <: Inline
   content::Vector{Inline} = []
 end
+Strong(content::Vector{Any}) = Strong(map(Inline, content))
 
 """
 Strikeout text (list of inlines)
@@ -352,6 +459,7 @@ Strikeout text (list of inlines)
 Base.@kwdef struct Strikeout <: Inline
   content::Vector{Inline} = []
 end
+Strikeout(content::Vector{Any}) = Strikeout(map(Inline, content))
 
 """
 Superscripted text (list of inlines)
@@ -359,6 +467,7 @@ Superscripted text (list of inlines)
 Base.@kwdef struct Superscript <: Inline
   content::Vector{Inline} = []
 end
+Superscript(content::Vector{Any}) = Superscript(map(Inline, content))
 
 """
 Subscripted text (list of inlines)
@@ -366,6 +475,7 @@ Subscripted text (list of inlines)
 Base.@kwdef struct Subscript <: Inline
   content::Vector{Inline} = []
 end
+Subscript(content::Vector{Any}) = Subscript(map(Inline, content))
 
 """
 Small caps text (list of inlines)
@@ -373,13 +483,24 @@ Small caps text (list of inlines)
 Base.@kwdef struct SmallCaps <: Inline
   content::Vector{Inline} = []
 end
+SmallCaps(content::Vector{Any}) = SmallCaps(map(Inline, content))
 
 """
 Quoted text (list of inlines)
 """
 Base.@kwdef struct Quoted <: Inline
-  quote_type::QuoteType
+  quote_type::QuoteType.T
   content::Vector{Inline} = []
+end
+function Quoted(quote_type::Dict, content::Vector{Any})
+  quote_type = if quote_type["t"] == "DoubleQuote"
+    QuoteType.DoubleQuote
+  elseif quote_type["t"] == "SingleQuote"
+    QuoteType.SingleQuote
+  else
+    error("Unknown $quote_type")
+  end
+  Quoted(quote_type, map(Inline, content))
 end
 
 """
@@ -389,6 +510,7 @@ Base.@kwdef struct Cite <: Inline
   citations::Vector{Citation} = []
   content::Vector{Inline} = []
 end
+Cite(citations::Vector{Any}, content::Vector{Any}) = Cite(map(Citation, citations), map(Inline, content))
 
 """
 Inline code (literal)
@@ -397,6 +519,7 @@ Base.@kwdef struct Code <: Inline
   attr::Attr = Attr()
   content::Text = ""
 end
+Code(attr::Vector{Any}, content) = Code(Attr(attr...), content)
 
 """
 Inter-word space
@@ -417,8 +540,18 @@ struct LineBreak <: Inline end
 TeX math (literal)
 """
 Base.@kwdef struct Math <: Inline
-  math_type::MathType
+  math_type::MathType.T
   content::Text = ""
+end
+function Math(math_type::Dict, content)
+  math_type = if math_type["t"] == "DisplayMath"
+    MathType.DisplayMath
+  elseif math_type["t"] == "InlineMath"
+    MathType.InlineMath
+  else
+    error("Unknown $math_type")
+  end
+  Math(math_type, content)
 end
 
 """
@@ -437,6 +570,7 @@ Base.@kwdef struct Link <: Inline
   content::Vector{Inline} = []
   target::Target = Target()
 end
+Link(attr::Vector{Any}, content::Vector{Any}, target) = Link(Attr(attr...), map(Inline, content), Target(target...))
 
 """
 Image: alt text (list of inlines), target
@@ -446,6 +580,7 @@ Base.@kwdef struct Image <: Inline
   content::Vector{Inline} = []
   target::Target = Target()
 end
+Image(attr::Vector{Any}, content::Vector{Any}, target) = Image(Attr(attr...), map(Inline, content), Target(target...))
 
 """
 Footnote or endnote
@@ -453,6 +588,7 @@ Footnote or endnote
 Base.@kwdef struct Note <: Inline
   content::Vector{Block} = []
 end
+Note(content::Vector{Any}) = Note(map(Block, content))
 
 """
 Generic inline container with attributes
@@ -461,6 +597,7 @@ Base.@kwdef struct Span <: Inline
   attr::Attr = Attr()
   content::Vector{Inline} = []
 end
+Span(attr, content::Vector{Any}) = Span(attr, map(Inline, content))
 
 struct Unknown
   e::Any
@@ -513,6 +650,9 @@ function Document(data::Dict)
     Block(e)
   end
   Document(; pandoc_api_version = pandoc_api_version(data["pandoc-api-version"]), meta = data["meta"], blocks)
+end
+@testset "document path" begin
+  Document(Path(joinpath(@__DIR__, p"../writer.markdown")))
 end
 
 end # module
