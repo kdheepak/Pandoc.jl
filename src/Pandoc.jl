@@ -604,14 +604,6 @@ struct Unknown
   t::Any
 end
 
-pandoc_api_version() = v"1.23"
-pandoc_api_version(v) = pandoc_api_version(v, Val(length(v)))
-pandoc_api_version(v, length::Val{0}) = error("Version array has to be length > 0 but got `$v` instead")
-pandoc_api_version(v, length::Val{1}) = VersionNumber(v[1])
-pandoc_api_version(v, length::Val{2}) = VersionNumber(v[1], v[2])
-pandoc_api_version(v, length::Val{3}) = VersionNumber(v[1], v[2], v[3])
-pandoc_api_version(v, length) = VersionNumber(v[1], v[2], v[3], tuple(v[4:end]...))
-
 # const MetaValue = Union{Dict{String, MetaValue}, Vector{MetaValue}, Bool, String, Vector{Inline}, Vector{Block}}
 const MetaValue = Any
 
@@ -622,12 +614,19 @@ Base.@kwdef mutable struct Document
   blocks::Vector{Block} = []
 end
 
-Document(data::String) = JSON3.read(data, Document)
+Document(data::String) = Document(JSON3.read(data, Dict))
+
+function Document(data::Dict)
+  blocks = map(data["blocks"]) do e
+    Block(e)
+  end
+  Document(; pandoc_api_version = VersionNumber(data["pandoc-api-version"]...), meta = data["meta"], blocks)
+end
 
 @testset "document json" begin
   doc = Document("""
  {
-    "pandoc-api-version": "1.23",
+    "pandoc-api-version": [1, 23],
     "meta": {},
     "blocks": [],
     "data": {}
@@ -638,21 +637,18 @@ end
 
 function Document(data::AbstractPath)
   ext = extension(data)
-  if ext == "json"
-    JSON3.read(read(data), Document)
+  data = if ext == "json"
+    JSON3.read(read(data), Dict)
   else
-    Document(JSON3.read(read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String), Dict))
+    JSON3.read(read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String), Dict)
   end
+  Document(data)
 end
 
-function Document(data::Dict)
-  blocks = map(data["blocks"]) do e
-    Block(e)
-  end
-  Document(; pandoc_api_version = pandoc_api_version(data["pandoc-api-version"]), meta = data["meta"], blocks)
-end
 @testset "document path" begin
-  Document(Path(joinpath(@__DIR__, p"../writer.markdown")))
+  doc = Document(Path(joinpath(@__DIR__, "../test/data/writer.markdown")))
+  @test doc.pandoc_api_version == v"1.23"
+  @test length(doc.blocks) == 239
 end
 
 end # module
