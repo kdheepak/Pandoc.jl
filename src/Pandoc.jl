@@ -56,6 +56,8 @@ Type of math element (display or inline).
 
 @enumx CitationMode AuthorInText SuppressAuthor NormalCitation
 
+@enumx MetaValueType MetaMap MetaList MetaBool MetaString MetaInlines MetaBlocks
+
 abstract type Element end
 
 abstract type Inline <: Element end
@@ -604,13 +606,41 @@ struct Unknown
   t::Any
 end
 
-# const MetaValue = Union{Dict{String, MetaValue}, Vector{MetaValue}, Bool, String, Vector{Inline}, Vector{Block}}
-const MetaValue = Any
+abstract type MetaValue end
+
+const MetaValueContent = Union{Dict{String,T},Vector{T},Bool,String,Vector{Inline},Vector{Block}} where {T<:MetaValue}
+
+Base.@kwdef struct MetaValueData <: MetaValue
+  type::MetaValueType.T
+  content::MetaValueContent
+end
+
+MetaValue(data::String) = MetaValueData(; type = MetaValueType.MetaString, content = data)
+
+function MetaValue(data::Vector)
+  d = MetaValue[]
+  for v in data
+    push!(d, MetaValue(v)) # TODO: support Vector{Inline} and Vector{Block}
+  end
+  MetaValueData(; type = MetaValueType.MetaList, content = d)
+end
+
+function MetaValue(data::Bool)
+  MetaValueData(; type = MetaValueType.MetaBool, content = data)
+end
+
+function MetaValue(data::Dict)
+  d = Dict{String,MetaValue}()
+  for (k, v) in data
+    d[k] = MetaValue(v)
+  end
+  MetaValueData(; type = MetaValueType.MetaMap, content = d)
+end
 
 Base.@kwdef mutable struct Document
   data::Dict{Symbol,Any} = Dict()
   pandoc_api_version::VersionNumber = v"1.23"
-  meta::Dict{String,MetaValue} = Dict()
+  meta::MetaValue = MetaValue(Dict())
   blocks::Vector{Block} = []
 end
 
@@ -620,7 +650,7 @@ function Document(data::Dict)
   blocks = map(data["blocks"]) do e
     Block(e)
   end
-  Document(; pandoc_api_version = VersionNumber(data["pandoc-api-version"]...), meta = data["meta"], blocks)
+  Document(; pandoc_api_version = VersionNumber(data["pandoc-api-version"]...), meta = MetaValue(data["meta"]), blocks)
 end
 
 @testset "document json" begin
@@ -643,6 +673,12 @@ function Document(data::AbstractPath)
     JSON3.read(read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String), Dict)
   end
   Document(data)
+end
+
+dump(doc::Document) = dump(stdout, doc)
+
+function dump(io, doc::Document)
+  JSON3.write(io, doc)
 end
 
 @testset "document path" begin
