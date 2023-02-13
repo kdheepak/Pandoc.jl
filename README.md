@@ -1,6 +1,6 @@
 # Pandoc.jl
 
-[![Build Status](https://img.shields.io/github/checks-status/kdheepak/Pandoc.jl/main)](https://github.com/kdheepak/Pandoc.jl/actions)
+[![Status](https://img.shields.io/github/actions/workflow/status/kdheepak/Pandoc.jl/test.yml?branch=main)](https://github.com/kdheepak/Pandoc.jl/actions)
 [![Documentation](https://img.shields.io/badge/docs-ready-blue.svg)](https://kdheepak.com/Pandoc.jl/)
 
 [Pandoc.jl](https://github.com/kdheepak/Pandoc.jl) is a package to make it easier to write filters for [Pandoc](https://github.com/jgm/pandoc) in Julia.
