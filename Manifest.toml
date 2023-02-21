@@ -4,10 +4,6 @@ julia_version = "1.8.5"
 manifest_format = "2.0"
 project_hash = "9fd32a82d5903869178e774a51bae53fa5ae137b"
 
-[[deps.ArgTools]]
-uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-version = "1.1.1"
-
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
@@ -33,11 +29,6 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
-[[deps.Downloads]]
-deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
-uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-version = "1.6.0"
-
 [[deps.EnumX]]
 git-tree-sha1 = "bdb1942cd4c45e3c678fd11569d5cccd80976237"
 uuid = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
@@ -48,9 +39,6 @@ deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
 version = "0.9.20"
-
-[[deps.FileWatching]]
-uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.InlineTest]]
 deps = ["Test"]
@@ -74,25 +62,6 @@ git-tree-sha1 = "84b10656a41ef564c39d2d477d7236966d2b5683"
 uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 version = "1.12.0"
 
-[[deps.LibCURL]]
-deps = ["LibCURL_jll", "MozillaCACerts_jll"]
-uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
-
-[[deps.LibCURL_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
-uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
-
-[[deps.LibGit2]]
-deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
-uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-
-[[deps.LibSSH2_jll]]
-deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
-uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
-
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
@@ -107,21 +76,8 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
-[[deps.MbedTLS_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.0+0"
-
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
-
-[[deps.MozillaCACerts_jll]]
-uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2022.2.1"
-
-[[deps.NetworkOptions]]
-uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
-version = "1.2.0"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -130,14 +86,9 @@ version = "0.3.20+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "SnoopPrecompile"]
-git-tree-sha1 = "946b56b2135c6c10bbb93efad8a78b699b6383ab"
+git-tree-sha1 = "6f4fbcd1ad45905a5dee3f4256fabb49aa2110c6"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.6"
-
-[[deps.Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
-uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.8.0"
+version = "2.5.7"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -148,10 +99,6 @@ version = "1.3.0"
 [[deps.Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-
-[[deps.REPL]]
-deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
-uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
 deps = ["SHA", "Serialization"]
@@ -190,11 +137,6 @@ deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.0"
 
-[[deps.Tar]]
-deps = ["ArgTools", "SHA"]
-uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
-version = "1.10.1"
-
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
@@ -206,28 +148,13 @@ uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
-[[deps.Zlib_jll]]
-deps = ["Libdl"]
-uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.12+3"
-
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 version = "5.1.1+0"
 
-[[deps.nghttp2_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
-
-[[deps.p7zip_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+0"
-
 [[deps.pandoc_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "bc780a533d96b0b5ca56e3d69ab528d36ad87084"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "a1cd90615d1ff32a0d4983e5af817ac6d5a504e2"
 uuid = "c5432543-76ad-5c9d-82bf-db097047a5e2"
-version = "3.0.1+0"
+version = "3.1.0+0"
