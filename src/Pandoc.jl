@@ -62,6 +62,8 @@ Type of math element (display or inline).
 
 abstract type Element end
 
+StructTypes.StructType(::Type{<:Element}) = StructTypes.CustomStruct()
+
 abstract type Inline <: Element end
 function Inline(e::Dict)
   if e["t"] == "Str"
@@ -217,6 +219,7 @@ Paragraph
 struct Para <: Block
   content::Vector{Inline}
 end
+StructTypes.lower(e::Para) = OrderedDict(["t" => "Para", "c" => e.content])
 
 """
 Multiple non-breaking lines
@@ -433,6 +436,7 @@ Text (string)
 Base.@kwdef struct Str <: Inline
   content::Text = ""
 end
+StructTypes.lower(e::Str) = OrderedDict(["t" => "Str", "c" => e.content])
 
 """
 Emphasized text (list of inlines)
@@ -529,6 +533,7 @@ Code(attr::Vector{Any}, content) = Code(Attr(attr...), content)
 Inter-word space
 """
 struct Space <: Inline end
+StructTypes.lower(_::Space) = OrderedDict("t" => "Space")
 
 """
 Soft line break
@@ -654,14 +659,12 @@ Base.@kwdef mutable struct Document
   blocks::Vector{Block} = []
 end
 
-StructTypes.StructType(::Type{Document}) = StructTypes.DictType()
-function StructTypes.keyvaluepairs(e::Document)
-  OrderedDict([
-    "pandoc-api-version" => [e.pandoc_api_version.major, e.pandoc_api_version.minor],
-    "meta" => pairs(e.meta),
-    "blocks" => [pairs(b) for b in e.blocks],
-  ])
-end
+StructTypes.StructType(::Type{Document}) = StructTypes.CustomStruct()
+StructTypes.lower(e::Document) = OrderedDict([
+  "pandoc-api-version" => [e.pandoc_api_version.major, e.pandoc_api_version.minor],
+  "meta" => pairs(e.meta),
+  "blocks" => e.blocks,
+])
 
 Document(data::String) = Document(JSON3.read(data, Dict))
 
