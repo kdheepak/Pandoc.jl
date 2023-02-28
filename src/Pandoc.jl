@@ -16,6 +16,8 @@ using FilePathsBase
 using FilePathsBase: /
 using InlineTest
 using JSON3
+using StructTypes
+using DataStructures
 
 using pandoc_jll
 
@@ -614,6 +616,14 @@ Base.@kwdef struct MetaValueData <: MetaValue
   type::MetaValueType.T
   content::MetaValueContent
 end
+StructTypes.StructType(::Type{MetaValueData}) = StructTypes.DictType()
+function Base.pairs(e::MetaValueData)
+  return if e.type == MetaValueType.MetaMap
+    Base.pairs(e.content)
+  else
+    error("Not implemented yet")
+  end
+end
 
 MetaValue(data::String) = MetaValueData(; type = MetaValueType.MetaString, content = data)
 
@@ -644,7 +654,25 @@ Base.@kwdef mutable struct Document
   blocks::Vector{Block} = []
 end
 
+StructTypes.StructType(::Type{Document}) = StructTypes.DictType()
+function StructTypes.keyvaluepairs(e::Document)
+  OrderedDict([
+    "pandoc-api-version" => [e.pandoc_api_version.major, e.pandoc_api_version.minor],
+    "meta" => pairs(e.meta),
+    "blocks" => [pairs(b) for b in e.blocks],
+  ])
+end
+
 Document(data::String) = Document(JSON3.read(data, Dict))
+
+function Document(data::Markdown.MD)
+  data = string(data)
+  iob = IOBuffer()
+  run(pipeline(`$PANDOC_JL_EXECUTABLE -f markdown -t json`; stdin = IOBuffer(data), stdout = iob))
+  json = String(take!(iob))
+  dict = JSON3.read(json, Dict)
+  Document(dict)
+end
 
 function Document(data::Dict)
   blocks = map(data["blocks"]) do e
@@ -673,12 +701,6 @@ function Document(data::AbstractPath)
     JSON3.read(read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String), Dict)
   end
   Document(data)
-end
-
-dump(doc::Document) = dump(stdout, doc)
-
-function dump(io, doc::Document)
-  JSON3.write(io, doc)
 end
 
 @testset "document path" begin
