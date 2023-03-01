@@ -1,7 +1,7 @@
 name = "Pandoc"
 uuid = "f853b5e0-b243-11e9-0043-7da5023c5ee7"
 authors = ["Dheepak Krishnamurthy <me@kdheepak.com>"]
-version = "0.3.1"
+version = "0.3.2"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -23,6 +23,7 @@ ReTest = "0.3"
 StructTypes = "1"
 julia = "1.6"
 pandoc_jll = "3"
+DataStructures = "0.18"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
