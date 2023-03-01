@@ -153,32 +153,58 @@ const TableCell = Vector{Block}
 """
 Attr: identifier, classes, key-value pairs
 """
-Base.@kwdef struct Attr
+Base.@kwdef mutable struct Attr
   identifier::String = ""
   classes::Vector{String} = []
   attributes::Vector{Tuple{String,String}} = []
 end
 Attr(i, c, a::Vector{Any}) = Attr(i, c, map(x -> (x[1], x[2]), a))
+StructTypes.StructType(::Type{Attr}) = StructTypes.CustomStruct()
+StructTypes.lower(e::Attr) = [e.identifier, e.classes, [[x1, x2] for (x1, x2) in e.attributes]]
 
-struct Citation
+mutable struct Citation
   id::String
   prefix::Vector{Inline}
   suffix::Vector{Inline}
   mode::CitationMode.T
-  note_number::Int
+  note_num::Int
   hash::Int
 end
+function Citation(d::Dict{String,Any})
+  mode = if d["citationMode"]["t"] == "AuthorInText"
+    CitationMode.AuthorInText
+  elseif d["citationMode"]["t"] == "SuppressAuthor"
+    CitationMode.SuppressAuthor
+  elseif d["citationMode"]["t"] == "NormalCitation"
+    CitationMode.NormalCitation
+  else
+    error("Unknown Citation")
+  end
+  Citation(d["citationId"], d["citationPrefix"], d["citationSuffix"], mode, d["citationNoteNum"], d["citationHash"])
+end
+StructTypes.StructType(::Type{Citation}) = StructTypes.CustomStruct()
+StructTypes.lower(e::Citation) = OrderedDict([
+  "citationId" => e.id,
+  "citationPrefix" => e.prefix,
+  "citationSuffix" => e.suffix,
+  "citationMode" => Dict("t" => e.mode),
+  "citationNoteNum" => e.note_num,
+  "citationHash" => e.hash,
+])
 
 """
 List attributes.
 
 The first element of the triple is the start number of the list.
 """
-Base.@kwdef struct ListAttributes
+Base.@kwdef mutable struct ListAttributes
   number::Int = 1
   style::ListNumberStyle.T = ListNumberStyle.T()
   delim::ListNumberDelim.T = ListNumberDelim.T()
 end
+StructTypes.StructType(::Type{ListAttributes}) = StructTypes.CustomStruct()
+StructTypes.lower(e::ListAttributes) = [e.number, Dict("t" => e.style), Dict("t" => e.delim)]
+
 function ListAttributes(number, style::Dict, delim::Dict)
   style = if style["t"] == "Decimal"
     ListNumberStyle.Decimal
@@ -208,15 +234,16 @@ end
 """
 Plain text, not a paragraph
 """
-struct Plain <: Block
+mutable struct Plain <: Block
   content::Vector{Inline}
 end
 Plain(content::Vector{Any}) = Plain(map(Inline, content))
+StructTypes.lower(e::Plain) = OrderedDict(["t" => "Plain", "c" => e.content])
 
 """
 Paragraph
 """
-struct Para <: Block
+mutable struct Para <: Block
   content::Vector{Inline}
 end
 StructTypes.lower(e::Para) = OrderedDict(["t" => "Para", "c" => e.content])
@@ -224,57 +251,63 @@ StructTypes.lower(e::Para) = OrderedDict(["t" => "Para", "c" => e.content])
 """
 Multiple non-breaking lines
 """
-struct LineBlock <: Block
+mutable struct LineBlock <: Block
   content::Vector{Vector{Inline}}
 end
+StructTypes.lower(e::LineBlock) = OrderedDict(["t" => "LineBlock", "c" => e.content])
 
 """
 Code block (literal) with attributes
 """
-struct CodeBlock <: Block
+mutable struct CodeBlock <: Block
   attr::Attr
   content::Text
 end
 CodeBlock(attr::Vector{Any}, content) = CodeBlock(Attr(attr...), content)
+StructTypes.lower(e::CodeBlock) = OrderedDict(["t" => "CodeBlock", "c" => [e.attr, e.content]])
 
 """
 Raw block
 """
-struct RawBlock <: Block
+mutable struct RawBlock <: Block
   format::Format
   content::Text
 end
+StructTypes.lower(e::RawBlock) = OrderedDict(["t" => "RawBlock", "c" => [e.format, e.content]])
 
 """
 Block quote (list of blocks)
 """
-struct BlockQuote <: Block
+mutable struct BlockQuote <: Block
   content::Vector{Block}
 end
 BlockQuote(content::Vector{Any}) = BlockQuote(map(Block, content))
+StructTypes.lower(e::BlockQuote) = OrderedDict(["t" => "BlockQuote", "c" => e.content])
 
 """
 Ordered list (attributes and a list of items, each a list of blocks)
 """
-struct OrderedList <: Block
+mutable struct OrderedList <: Block
   attr::ListAttributes
   content::Vector{Vector{Block}}
 end
 OrderedList(attr::Vector{Any}, content::Vector{Any}) =
   OrderedList(ListAttributes(attr...), [map(Block, c) for c in content])
+StructTypes.lower(e::OrderedList) = OrderedDict(["t" => "OrderedList", "c" => [e.attr, e.content]])
 
 """
 Bullet list (list of items, each a list of blocks)
 """
-struct BulletList <: Block
+mutable struct BulletList <: Block
   content::Vector{Vector{Block}}
 end
 BulletList(content::Vector{Any}) = BulletList([map(Block, c) for c in content])
+StructTypes.lower(e::BulletList) = OrderedDict(["t" => "BulletList", "c" => e.content])
 
 """
 Definition list. Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)
 """
-struct DefinitionList <: Block
+mutable struct DefinitionList <: Block
   content::Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}
 end
 DefinitionList(content::Vector{Any}) = DefinitionList(map(content) do (is, bs)
@@ -282,33 +315,37 @@ DefinitionList(content::Vector{Any}) = DefinitionList(map(content) do (is, bs)
   bs = [map(Block, b) for b in bs]
   is => bs
 end)
+StructTypes.lower(e::DefinitionList) =
+  OrderedDict(["t" => "DefinitionList", "c" => [[is, bs] for (is, bs) in e.content]])
 
 """
 Header - level (integer) and text (inlines)
 """
-Base.@kwdef struct Header <: Block
+Base.@kwdef mutable struct Header <: Block
   level::Int = 1
   attr::Attr = Attr()
   content::Vector{Inline} = []
 end
 Header(level, attr, content::Vector{Any}) = Header(level, Attr(attr...), map(Inline, content))
+StructTypes.lower(e::Header) = OrderedDict(["t" => "Header", "c" => [e.level, e.attr, e.content]])
 
 """
 Horizontal rule
 """
 struct HorizontalRule <: Block end
+StructTypes.lower(_::HorizontalRule) = Dict("t" => "HorizontalRule")
 
 """
 The width of a table column, as a percentage of the text width.
 """
-Base.@kwdef struct ColWidth
+Base.@kwdef mutable struct ColWidth
   width::Union{Float64,Symbol} = :ColWidthDefault
 end
 
 """
 The specification for a single table column.
 """
-Base.@kwdef struct ColSpec
+Base.@kwdef mutable struct ColSpec
   alignment::Alignment.T = Alignment.T()
   colwidth::ColWidth = ColWidth()
 end
@@ -326,7 +363,7 @@ const ColSpan = Int
 """
 A table cell.
 """
-Base.@kwdef struct Cell
+Base.@kwdef mutable struct Cell
   attr::Attr = Attr()
   alignment::Alignment.T = Alignment.T()
   rowspan::RowSpan = 1
@@ -334,7 +371,7 @@ Base.@kwdef struct Cell
   content::Vector{Block} = []
 end
 
-Base.@kwdef struct Row
+Base.@kwdef mutable struct Row
   attr::Attr = Attr()
   cells::Vector{Cell} = []
 end
@@ -342,7 +379,7 @@ end
 """
 The head of a table.
 """
-Base.@kwdef struct TableHead
+Base.@kwdef mutable struct TableHead
   attr::Attr = Attr()
   rows::Vector{Row} = []
 end
@@ -357,7 +394,7 @@ A body of a table, with an intermediate head, intermediate body,
 and the specified number of row header columns in the intermediate
 body.
 """
-Base.@kwdef struct TableBody
+Base.@kwdef mutable struct TableBody
   attr::Attr = Attr()
   rowheadcolumns::RowHeadColumns = 0
   head::Vector{Row} = []
@@ -367,7 +404,7 @@ end
 """
 The foot of a table.
 """
-Base.@kwdef struct TableFoot
+Base.@kwdef mutable struct TableFoot
   attr::Attr = Attr()
   content::Vector{Row} = []
 end
@@ -375,26 +412,30 @@ end
 """
 A short caption, for use in, for instance, lists of figures.
 """
-Base.@kwdef struct ShortCaption
+Base.@kwdef mutable struct ShortCaption
   content::Union{Nothing,Vector{Inline}} = nothing
 end
+StructTypes.StructType(::Type{ShortCaption}) = StructTypes.CustomStruct()
+StructTypes.lower(e::ShortCaption) = e.content
 
 """
 The caption of a table or figure, with optional short caption.
 """
-Base.@kwdef struct Caption
+Base.@kwdef mutable struct Caption
   caption::ShortCaption = ShortCaption()
   content::Vector{Block} = []
 end
 Caption(_::Nothing, content::Vector{Any}) = Caption(ShortCaption(), map(Block, content))
 Caption(caption::Vector{Any}, content::Vector{Any}) = Caption(ShortCaption(map(Inline, caption)), map(Block, content))
+StructTypes.StructType(::Type{Caption}) = StructTypes.CustomStruct()
+StructTypes.lower(e::Caption) = [e.caption, e.content]
 
 """
 Table, with attributes, caption, optional short caption,
 column alignments and widths (required), table head, table
 bodies, and table foot
 """
-Base.@kwdef struct Table <: Block
+Base.@kwdef mutable struct Table <: Block
   attr::Attr = Attr()
   caption::Caption = Caption()
   colspec::Vector{ColSpec} = []
@@ -403,37 +444,42 @@ Base.@kwdef struct Table <: Block
   foot::TableFoot = TableFoot()
 end
 
-Base.@kwdef struct Figure <: Block
+Base.@kwdef mutable struct Figure <: Block
   attr::Attr = Attr()
   caption::Caption = Caption()
   content::Vector{Block} = []
 end
 Figure(attr::Vector{Any}, caption, content::Vector{Any}) =
   Figure(Attr(attr...), Caption(caption...), map(Block, content))
+StructTypes.lower(e::Figure) = OrderedDict(["t" => "Figure", "c" => [e.attr, e.caption, e.content]])
 
 """
 Generic block container with attributes
 """
-Base.@kwdef struct Div <: Block
+Base.@kwdef mutable struct Div <: Block
   attr::Attr = Attr()
   content::Vector{Block} = []
 end
 Div(attr::Vector{Any}, content::Vector{Any}) = Div(Attr(attr...), map(Block, content))
+StructTypes.lower(e::Div) = OrderedDict(["t" => "Div", "c" => [e.attr, e.content]])
 
 struct Null <: Block end
+StructTypes.lower(_::Null) = Dict("t" => "Null")
 
 """
 Link target (URL, title).
 """
-Base.@kwdef struct Target
+Base.@kwdef mutable struct Target
   url::Text = ""
   title::Text = ""
 end
+StructTypes.StructType(::Type{Target}) = StructTypes.CustomStruct()
+StructTypes.lower(e::Target) = [e.url, e.title]
 
 """
 Text (string)
 """
-Base.@kwdef struct Str <: Inline
+Base.@kwdef mutable struct Str <: Inline
   content::Text = ""
 end
 StructTypes.lower(e::Str) = OrderedDict(["t" => "Str", "c" => e.content])
@@ -441,62 +487,69 @@ StructTypes.lower(e::Str) = OrderedDict(["t" => "Str", "c" => e.content])
 """
 Emphasized text (list of inlines)
 """
-Base.@kwdef struct Emph <: Inline
+Base.@kwdef mutable struct Emph <: Inline
   content::Vector{Inline} = []
 end
 Emph(content::Vector{Any}) = Emph(map(Inline, content))
+StructTypes.lower(e::Emph) = OrderedDict(["t" => "Emph", "c" => e.content])
 
 """
 Underlined text (list of inlines)
 """
-Base.@kwdef struct Underline <: Inline
+Base.@kwdef mutable struct Underline <: Inline
   content::Vector{Inline} = []
 end
+StructTypes.lower(e::Underline) = OrderedDict(["t" => "Underline", "c" => e.content])
 
 """
 Strongly emphasized text (list of inlines)
 """
-Base.@kwdef struct Strong <: Inline
+Base.@kwdef mutable struct Strong <: Inline
   content::Vector{Inline} = []
 end
 Strong(content::Vector{Any}) = Strong(map(Inline, content))
+StructTypes.lower(e::Strong) = OrderedDict(["t" => "Strong", "c" => e.content])
 
 """
 Strikeout text (list of inlines)
 """
-Base.@kwdef struct Strikeout <: Inline
+Base.@kwdef mutable struct Strikeout <: Inline
   content::Vector{Inline} = []
 end
 Strikeout(content::Vector{Any}) = Strikeout(map(Inline, content))
+StructTypes.lower(e::Strikeout) = OrderedDict(["t" => "Strikeout", "c" => e.content])
 
 """
 Superscripted text (list of inlines)
 """
-Base.@kwdef struct Superscript <: Inline
+Base.@kwdef mutable struct Superscript <: Inline
   content::Vector{Inline} = []
 end
 Superscript(content::Vector{Any}) = Superscript(map(Inline, content))
+StructTypes.lower(e::Superscript) = OrderedDict(["t" => "Superscript", "c" => e.content])
 
 """
 Subscripted text (list of inlines)
 """
-Base.@kwdef struct Subscript <: Inline
+Base.@kwdef mutable struct Subscript <: Inline
   content::Vector{Inline} = []
 end
 Subscript(content::Vector{Any}) = Subscript(map(Inline, content))
+StructTypes.lower(e::Subscript) = OrderedDict(["t" => "Subscript", "c" => e.content])
 
 """
 Small caps text (list of inlines)
 """
-Base.@kwdef struct SmallCaps <: Inline
+Base.@kwdef mutable struct SmallCaps <: Inline
   content::Vector{Inline} = []
 end
 SmallCaps(content::Vector{Any}) = SmallCaps(map(Inline, content))
+StructTypes.lower(e::SmallCaps) = OrderedDict(["t" => "SmallCaps", "c" => e.content])
 
 """
 Quoted text (list of inlines)
 """
-Base.@kwdef struct Quoted <: Inline
+Base.@kwdef mutable struct Quoted <: Inline
   quote_type::QuoteType.T
   content::Vector{Inline} = []
 end
@@ -510,24 +563,27 @@ function Quoted(quote_type::Dict, content::Vector{Any})
   end
   Quoted(quote_type, map(Inline, content))
 end
+StructTypes.lower(e::Quoted) = OrderedDict(["t" => "Quoted", "c" => [Dict("t" => e.quote_type), e.content]])
 
 """
 Citation (list of inlines)
 """
-Base.@kwdef struct Cite <: Inline
+Base.@kwdef mutable struct Cite <: Inline
   citations::Vector{Citation} = []
   content::Vector{Inline} = []
 end
 Cite(citations::Vector{Any}, content::Vector{Any}) = Cite(map(Citation, citations), map(Inline, content))
+StructTypes.lower(e::Cite) = OrderedDict(["t" => "Cite", "c" => [e.citations, e.content]])
 
 """
 Inline code (literal)
 """
-Base.@kwdef struct Code <: Inline
+Base.@kwdef mutable struct Code <: Inline
   attr::Attr = Attr()
   content::Text = ""
 end
 Code(attr::Vector{Any}, content) = Code(Attr(attr...), content)
+StructTypes.lower(e::Code) = OrderedDict(["t" => "Code", "c" => [e.attr, e.content]])
 
 """
 Inter-word space
@@ -539,16 +595,18 @@ StructTypes.lower(_::Space) = OrderedDict("t" => "Space")
 Soft line break
 """
 struct SoftBreak <: Inline end
+StructTypes.lower(_::SoftBreak) = OrderedDict("t" => "SoftBreak")
 
 """
 Hard line break
 """
 struct LineBreak <: Inline end
+StructTypes.lower(_::LineBreak) = OrderedDict("t" => "LineBreak")
 
 """
 TeX math (literal)
 """
-Base.@kwdef struct Math <: Inline
+Base.@kwdef mutable struct Math <: Inline
   math_type::MathType.T
   content::Text = ""
 end
@@ -562,51 +620,57 @@ function Math(math_type::Dict, content)
   end
   Math(math_type, content)
 end
+StructTypes.lower(e::Math) = OrderedDict(["t" => "Math", "c" => [e.math_type, e.content]])
 
 """
 Raw inline
 """
-Base.@kwdef struct RawInline <: Inline
+Base.@kwdef mutable struct RawInline <: Inline
   format::Format = ""
   content::Text = ""
 end
+StructTypes.lower(e::RawInline) = OrderedDict(["t" => "RawInline", "c" => [e.format, e.content]])
 
 """
 Hyperlink: alt text (list of inlines), target
 """
-Base.@kwdef struct Link <: Inline
+Base.@kwdef mutable struct Link <: Inline
   attr::Attr = Attr()
   content::Vector{Inline} = []
   target::Target = Target()
 end
 Link(attr::Vector{Any}, content::Vector{Any}, target) = Link(Attr(attr...), map(Inline, content), Target(target...))
+StructTypes.lower(e::Link) = OrderedDict(["t" => "Link", "c" => [e.attr, e.content, e.target]])
 
 """
 Image: alt text (list of inlines), target
 """
-Base.@kwdef struct Image <: Inline
+Base.@kwdef mutable struct Image <: Inline
   attr::Attr = Attr()
   content::Vector{Inline} = []
   target::Target = Target()
 end
 Image(attr::Vector{Any}, content::Vector{Any}, target) = Image(Attr(attr...), map(Inline, content), Target(target...))
+StructTypes.lower(e::Image) = OrderedDict(["t" => "Image", "c" => [e.attr, e.content, e.target]])
 
 """
 Footnote or endnote
 """
-Base.@kwdef struct Note <: Inline
+Base.@kwdef mutable struct Note <: Inline
   content::Vector{Block} = []
 end
 Note(content::Vector{Any}) = Note(map(Block, content))
+StructTypes.lower(e::Note) = OrderedDict(["t" => "Note", "c" => e.content])
 
 """
 Generic inline container with attributes
 """
-Base.@kwdef struct Span <: Inline
+Base.@kwdef mutable struct Span <: Inline
   attr::Attr = Attr()
   content::Vector{Inline} = []
 end
 Span(attr, content::Vector{Any}) = Span(attr, map(Inline, content))
+StructTypes.lower(e::Span) = OrderedDict(["t" => "Span", "c" => [e.attr, e.content]])
 
 struct Unknown
   e::Any
@@ -617,7 +681,7 @@ abstract type MetaValue end
 
 const MetaValueContent = Union{Dict{String,T},Vector{T},Bool,String,Vector{Inline},Vector{Block}} where {T<:MetaValue}
 
-Base.@kwdef struct MetaValueData <: MetaValue
+Base.@kwdef mutable struct MetaValueData <: MetaValue
   type::MetaValueType.T
   content::MetaValueContent
 end
@@ -666,10 +730,7 @@ StructTypes.lower(e::Document) = OrderedDict([
   "blocks" => e.blocks,
 ])
 
-Document(data::String) = Document(JSON3.read(data, Dict))
-
-function Document(data::Markdown.MD)
-  data = string(data)
+function Document(data::String)
   iob = IOBuffer()
   run(pipeline(`$PANDOC_JL_EXECUTABLE -f markdown -t json`; stdin = IOBuffer(data), stdout = iob))
   json = String(take!(iob))
