@@ -1,5 +1,5 @@
 indent = 2
-margin = 120
+margin = 150
 always_for_in = true
 remove_extra_newlines = true
 pipe_to_function_call = true
