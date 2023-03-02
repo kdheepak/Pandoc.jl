@@ -707,6 +707,7 @@ Base.@kwdef mutable struct Span <: Inline
   content::Vector{Inline} = []
 end
 StructTypes.lower(e::Span) = OrderedDict(["t" => "Span", "c" => [e.attr, e.content]])
+StructTypes.constructfrom(::Type{Span}, d::Dict) = Span(Attr(d["c"][1]...), map(Inline, d["c"][2]))
 
 struct Unknown
   e::Any
