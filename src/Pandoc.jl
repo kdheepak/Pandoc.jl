@@ -303,9 +303,15 @@ The width of a table column, as a percentage of the text width.
 Base.@kwdef mutable struct ColWidth
   width::Union{Float64,Symbol} = :ColWidthDefault
 end
-ColWidth(d::Dict) = ColWidth(Symbol(d["t"]))
+ColWidth(d::Dict) = ColWidth(d["t"] == "ColWidthDefault" ? Symbol(d["t"]) : Float64(d["c"]))
 StructTypes.StructType(::Type{ColWidth}) = StructTypes.CustomStruct()
-StructTypes.lower(e::ColWidth) = Dict("t" => "ColWidthDefault") # TODO: fix colwidth serialize
+function StructTypes.lower(e::ColWidth)
+  if e.width isa Symbol
+    Dict("t" => "ColWidthDefault")
+  else
+    Dict("t" => "ColWidth", "c" => e.width)
+  end
+end
 
 """
 The specification for a single table column.
