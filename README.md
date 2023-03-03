@@ -18,9 +18,9 @@ To install Pandoc.jl, open the Julia package manager prompt and type:
 ```julia
 julia> using Pandoc, FilePaths, Test
 
-julia> doc = Pandoc.Document(p"./test/data/writer.markdown");
+julia> doc = Pandoc.Document(p"./test/data/example.md");
 
 julia> @test doc.pandoc_api_version == v"1.23"
 
-julia> @test length(doc.blocks) == 239
+julia> @test length(doc.blocks) == 548
 ```
