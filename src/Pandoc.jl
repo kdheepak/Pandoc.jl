@@ -164,7 +164,7 @@ Base.@kwdef mutable struct ListAttributes
 end
 StructTypes.StructType(::Type{ListAttributes}) = StructTypes.CustomStruct()
 StructTypes.lower(e::ListAttributes) = [e.number, Dict("t" => e.style), Dict("t" => e.delim)]
-function ListAttributes(d::Dict)
+function ListAttributes(d::Vector)
   number, style, delim = d
   style = if style["t"] == "Decimal"
     ListNumberStyle.Decimal
@@ -255,7 +255,7 @@ mutable struct OrderedList <: Block
   content::Vector{Vector{Block}}
 end
 StructTypes.lower(e::OrderedList) = OrderedDict(["t" => "OrderedList", "c" => [e.attr, e.content]])
-StructTypes.constructfrom(::Type{OrderedList}, d::Dict) = OrderedList(ListAttributes(d["c"][1]...), [map(Block, b) for b in d["c"][2]])
+StructTypes.constructfrom(::Type{OrderedList}, d::Dict) = OrderedList(ListAttributes(d["c"][1]), [map(Block, b) for b in d["c"][2]])
 
 """
 Bullet list (list of items, each a list of blocks)
@@ -607,12 +607,6 @@ end
 StructTypes.lower(e::Cite) = OrderedDict(["t" => "Cite", "c" => [e.citations, e.content]])
 StructTypes.constructfrom(::Type{Cite}, d::Dict) = Cite(map(Citation, d["c"][1]), map(Inline, d["c"][2]))
 
-@testset "citation" begin
-  Document(raw"""
-  [@author]
-  """)
-end
-
 """
 Inline code (literal)
 """
@@ -798,24 +792,6 @@ function Document(data::AbstractPath)
     read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String)
   end
   JSON3.read(json, Document)
-end
-
-@testset "document json" begin
-  doc = Document("""
- {
-    "pandoc-api-version": [1, 23],
-    "meta": {},
-    "blocks": [],
-    "data": {}
- }
- """)
-  @test doc.pandoc_api_version == v"1.23"
-end
-
-@testset "document path" begin
-  doc = Document(Path(joinpath(@__DIR__, "../test/data/writer.markdown")))
-  @test doc.pandoc_api_version == v"1.23"
-  @test length(doc.blocks) == 239
 end
 
 end # module
