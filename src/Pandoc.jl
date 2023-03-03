@@ -22,8 +22,6 @@ using DataStructures
 using pandoc_jll
 
 const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
-const FORMATS =
-  Dict{String,String}("md" => "markdown", "markdown" => "markdown", "qmd" => "markdown", "wiki" => "wiki", "tex" => "latex", "latex" => "latex")
 
 @enumx Alignment AlignLeft AlignRight AlignCenter AlignDefault
 Alignment.T() = AlignDefault
@@ -140,7 +138,7 @@ function Citation(d::Dict{String,Any})
   else
     error("Unknown Citation")
   end
-  Citation(d["citationId"], d["citationPrefix"], d["citationSuffix"], mode, d["citationNoteNum"], d["citationHash"])
+  Citation(d["citationId"], map(Inline, d["citationPrefix"]), map(Inline, d["citationSuffix"]), mode, d["citationNoteNum"], d["citationHash"])
 end
 StructTypes.StructType(::Type{Citation}) = StructTypes.CustomStruct()
 StructTypes.lower(e::Citation) = OrderedDict([
@@ -779,7 +777,7 @@ StructTypes.lower(e::Document) =
 
 function Document(data::String)
   iob = IOBuffer()
-  run(pipeline(`$PANDOC_JL_EXECUTABLE -f markdown -t json`; stdin = IOBuffer(data), stdout = iob))
+  run(pipeline(`$PANDOC_JL_EXECUTABLE -t json`; stdin = IOBuffer(data), stdout = iob))
   json = String(take!(iob))
   JSON3.read(json, Document)
 end
@@ -789,7 +787,7 @@ function Document(data::AbstractPath)
   json = if ext == "json"
     read(data)
   else
-    read(`$PANDOC_JL_EXECUTABLE -f $(FORMATS[ext]) -t json $data`, String)
+    read(`$PANDOC_JL_EXECUTABLE -t json $data`, String)
   end
   JSON3.read(json, Document)
 end
