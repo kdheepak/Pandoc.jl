@@ -72,6 +72,18 @@ This is another paragraph
 """)
 ```
 
+### Convert Markdown to Pandoc JSOn
+
+```@repl
+using Pandoc
+
+Pandoc.JSON3.write(Pandoc.Document(raw"""
+# header level 1
+
+This is a paragraph
+"""))
+```
+
 ### Writing Pandoc Filters in Julia
 
 Let's say you wanted to increment all the headers by 1 level.
