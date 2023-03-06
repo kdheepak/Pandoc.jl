@@ -1,3 +1,16 @@
+"""
+    Converter(input = "# header level 1") -> String
+    Converter(input = "# header level 1", from="markdown", to="html") -> String
+
+This is a `Converter` options struct.
+It supports all of pandoc's command line arguments.
+
+You can use it like so:
+
+```julia
+run(Converter(; input = "# Header level 1"))
+```
+"""
 Base.@kwdef mutable struct Converter
   input::Union{String,AbstractPath,Vector{<:AbstractPath}}
   from::Union{Nothing,String} = nothing
