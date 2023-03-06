@@ -1,8 +1,5 @@
 # Usage
 
-You will need to install [Pandoc](https://github.com/jgm/pandoc).
-You can install it using your favorite package manager.
-
 To use it in Julia, first add it:
 
 ```
