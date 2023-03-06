@@ -23,7 +23,7 @@ using pandoc_jll
 
 const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
 
-include("types.jl")
 include("interface.jl")
+include("types.jl")
 
 end # module

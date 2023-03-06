@@ -751,11 +751,11 @@ end
 StructTypes.lower(e::Document) =
   OrderedDict(["pandoc-api-version" => [e.pandoc_api_version.major, e.pandoc_api_version.minor], "meta" => e.meta, "blocks" => e.blocks])
 
-function Document(data::String)
-  iob = IOBuffer()
-  run(pipeline(`$PANDOC_JL_EXECUTABLE -t json`; stdin = IOBuffer(data), stdout = iob))
-  json = String(take!(iob))
-  JSON3.read(json, Document)
+function Document(data::String; to = "json", kwargs...)
+  if to != "json"
+    @warn "Cannot create Document with `to = \"$to\"`, using `to = \"json\"`."
+  end
+  JSON3.read(run(Converter(; input = data, to = "json", kwargs...)), Document)
 end
 
 function Document(data::AbstractPath)
