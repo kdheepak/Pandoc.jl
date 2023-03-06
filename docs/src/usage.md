@@ -77,7 +77,8 @@ This is another paragraph
 Let's say you wanted to increment all the headers by 1 level.
 
 ```@repl
-using Pandoc, JSON3
+using Pandoc
+JSON3 = Pandoc.JSON3
 
 doc = Pandoc.Document(raw"""
 # header level 1
