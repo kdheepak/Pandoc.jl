@@ -12,7 +12,7 @@ run(Converter(; input = "# Header level 1"))
 ```
 """
 Base.@kwdef mutable struct Converter
-  input::Union{String,AbstractPath,Vector{<:AbstractPath}}
+  input::Union{String,AbstractPath,Vector{<:AbstractPath},Document}
   from::Union{Nothing,String} = nothing
   to::Union{Nothing,String} = nothing
   output::Union{Nothing,String} = nothing
@@ -118,6 +118,7 @@ end
 
 function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
   cmd = `$p`
+  c.input isa Document && (c.from = "json")
   !isnothing(c.from) && (cmd = `$cmd -f $(c.from)`)
   !isnothing(c.to) && (cmd = `$cmd -t $(c.to)`)
   !isnothing(c.output) && (cmd = `$cmd -o $(c.output)`)
@@ -238,6 +239,8 @@ function Base.run(c::Converter)
   elseif c.input isa Vector
     cmd = `$cmd $(join(c.input, " "))`
     nothing
+  elseif c.input isa Document
+    IOBuffer(JSON3.write(c.input))
   end
   stdout = isnothing(c.output) ? IOBuffer() : nothing
   run(pipeline(cmd; stdin = stdin, stdout = stdout))

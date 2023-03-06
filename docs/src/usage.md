@@ -78,7 +78,6 @@ Let's say you wanted to increment all the headers by 1 level.
 
 ```@repl
 using Pandoc
-JSON3 = Pandoc.JSON3
 
 doc = Pandoc.Document(raw"""
 # header level 1
@@ -96,7 +95,7 @@ for block in doc.blocks
   end
 end
 
-run(Pandoc.Converter(input = JSON3.write(doc), from="json", to="markdown")) |> println
+run(Pandoc.Converter(input = doc, from="json", to="markdown")) |> println
 ```
 
 ### Using `Pandoc.jl` with `FilePaths`

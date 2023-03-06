@@ -46,7 +46,7 @@ julia> for block in doc.blocks
          end
        end
 
-julia> run(Pandoc.Converter(input = JSON3.write(doc), from="json", to="markdown"))|> println
+julia> run(Pandoc.Converter(input = doc, to="markdown")) |> println
 ## This is a header
 
 This is a paragraph.
