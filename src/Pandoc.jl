@@ -10,6 +10,7 @@ See https://hackage.haskell.org/package/pandoc-types-1.23/docs/Text-Pandoc-Defin
 module Pandoc
 
 using Markdown
+using DocStringExtensions
 
 using EnumX
 using FilePathsBase

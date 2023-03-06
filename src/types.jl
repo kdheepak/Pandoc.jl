@@ -86,6 +86,8 @@ const TableCell = Vector{Block}
 
 """
 Attr: identifier, classes, key-value pairs
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Attr
   identifier::String = ""
@@ -96,6 +98,11 @@ Attr(i, c, a::Vector{Any}) = Attr(i, c, map(x -> (x[1], x[2]), a))
 StructTypes.StructType(::Type{Attr}) = StructTypes.CustomStruct()
 StructTypes.lower(e::Attr) = [e.identifier, e.classes, [[x1, x2] for (x1, x2) in e.attributes]]
 
+"""
+Citation
+
+$(TYPEDFIELDS)
+"""
 mutable struct Citation
   id::String
   prefix::Vector{Inline}
@@ -130,6 +137,8 @@ StructTypes.lower(e::Citation) = OrderedDict([
 List attributes.
 
 The first element of the triple is the start number of the list.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct ListAttributes
   number::Int = 1
@@ -167,6 +176,8 @@ end
 
 """
 Plain text, not a paragraph
+
+$(TYPEDFIELDS)
 """
 mutable struct Plain <: Block
   content::Vector{Inline}
@@ -176,6 +187,8 @@ StructTypes.constructfrom(::Type{Plain}, d::Dict) = Plain(map(Inline, d["c"]))
 
 """
 Paragraph
+
+$(TYPEDFIELDS)
 """
 mutable struct Para <: Block
   content::Vector{Inline}
@@ -185,6 +198,8 @@ StructTypes.constructfrom(::Type{Para}, d::Dict) = Para(map(Inline, d["c"]))
 
 """
 Multiple non-breaking lines
+
+$(TYPEDFIELDS)
 """
 mutable struct LineBlock <: Block
   content::Vector{Vector{Inline}}
@@ -194,6 +209,8 @@ StructTypes.constructfrom(::Type{LineBlock}, d::Dict) = LineBlock(map(Inline, i)
 
 """
 Code block (literal) with attributes
+
+$(TYPEDFIELDS)
 """
 mutable struct CodeBlock <: Block
   attr::Attr
@@ -204,6 +221,8 @@ StructTypes.constructfrom(::Type{CodeBlock}, d::Dict) = CodeBlock(Attr(d["c"][1]
 
 """
 Raw block
+
+$(TYPEDFIELDS)
 """
 mutable struct RawBlock <: Block
   format::Format
@@ -214,6 +233,8 @@ StructTypes.constructfrom(::Type{RawBlock}, d::Dict) = RawBlock(d["c"]...)
 
 """
 Block quote (list of blocks)
+
+$(TYPEDFIELDS)
 """
 mutable struct BlockQuote <: Block
   content::Vector{Block}
@@ -223,6 +244,8 @@ StructTypes.constructfrom(::Type{BlockQuote}, d::Dict) = BlockQuote(map(Block, d
 
 """
 Ordered list (attributes and a list of items, each a list of blocks)
+
+$(TYPEDFIELDS)
 """
 mutable struct OrderedList <: Block
   attr::ListAttributes
@@ -233,6 +256,8 @@ StructTypes.constructfrom(::Type{OrderedList}, d::Dict) = OrderedList(ListAttrib
 
 """
 Bullet list (list of items, each a list of blocks)
+
+$(TYPEDFIELDS)
 """
 mutable struct BulletList <: Block
   content::Vector{Vector{Block}}
@@ -242,6 +267,8 @@ StructTypes.constructfrom(::Type{BulletList}, d::Dict) = BulletList([map(Block, 
 
 """
 Definition list. Each list item is a pair consisting of a term (a list of inlines) and one or more definitions (each a list of blocks)
+
+$(TYPEDFIELDS)
 """
 mutable struct DefinitionList <: Block
   content::Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}
@@ -255,6 +282,8 @@ end)
 
 """
 Header - level (integer) and text (inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Header <: Block
   level::Int = 1
@@ -266,6 +295,8 @@ StructTypes.constructfrom(::Type{Header}, d::Dict) = Header(d["c"][1], Attr(d["c
 
 """
 Horizontal rule
+
+$(TYPEDFIELDS)
 """
 struct HorizontalRule <: Block end
 StructTypes.lower(_::HorizontalRule) = Dict("t" => "HorizontalRule")
@@ -273,6 +304,8 @@ StructTypes.constructfrom(::Type{HorizontalRule}, d::Dict) = HorizontalRule()
 
 """
 The width of a table column, as a percentage of the text width.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct ColWidth
   width::Union{Float64,Symbol} = :ColWidthDefault
@@ -289,6 +322,8 @@ end
 
 """
 The specification for a single table column.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct ColSpec
   alignment::Alignment.T = Alignment.T()
@@ -322,6 +357,8 @@ const ColSpan = Int
 
 """
 A table cell.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Cell
   attr::Attr = Attr()
@@ -346,6 +383,11 @@ end
 StructTypes.StructType(::Type{Cell}) = StructTypes.CustomStruct()
 StructTypes.lower(e::Cell) = [e.attr, e.alignment, e.rowspan, e.colspan, e.content]
 
+"""
+Row
+
+$(TYPEDFIELDS)
+"""
 Base.@kwdef mutable struct Row
   attr::Attr = Attr()
   cells::Vector{Cell} = []
@@ -359,6 +401,8 @@ StructTypes.lower(e::Row) = [e.attr, e.cells]
 
 """
 The head of a table.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct TableHead
   attr::Attr = Attr()
@@ -380,6 +424,8 @@ const RowHeadColumns = Int
 A body of a table, with an intermediate head, intermediate body,
 and the specified number of row header columns in the intermediate
 body.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct TableBody
   attr::Attr = Attr()
@@ -396,6 +442,8 @@ StructTypes.lower(e::TableBody) = [e.attr, e.rowheadcolumns, e.head, e.content]
 
 """
 The foot of a table.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct TableFoot
   attr::Attr = Attr()
@@ -410,6 +458,8 @@ StructTypes.lower(e::TableFoot) = [e.attr, e.content]
 
 """
 A short caption, for use in, for instance, lists of figures.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct ShortCaption
   content::Union{Nothing,Vector{Inline}} = nothing
@@ -419,6 +469,8 @@ StructTypes.lower(e::ShortCaption) = e.content
 
 """
 The caption of a table or figure, with optional short caption.
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Caption
   caption::ShortCaption = ShortCaption()
@@ -433,6 +485,8 @@ StructTypes.lower(e::Caption) = [e.caption, e.content]
 Table, with attributes, caption, optional short caption,
 column alignments and widths (required), table head, table
 bodies, and table foot
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Table <: Block
   attr::Attr = Attr()
@@ -447,6 +501,11 @@ function StructTypes.constructfrom(::Type{Table}, d::Dict)
   Table(Attr(d["c"][1]...), Caption(d["c"][2]...), map(ColSpec, d["c"][3]), TableHead(d["c"][4]), map(TableBody, d["c"][5]), TableFoot(d["c"][6]))
 end
 
+"""
+Figure
+
+$(TYPEDFIELDS)
+"""
 Base.@kwdef mutable struct Figure <: Block
   attr::Attr = Attr()
   caption::Caption = Caption()
@@ -457,6 +516,8 @@ StructTypes.constructfrom(::Type{Figure}, d::Dict) = Figure(Attr(d["c"][1]...), 
 
 """
 Generic block container with attributes
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Div <: Block
   attr::Attr = Attr()
@@ -471,6 +532,8 @@ StructTypes.constructfrom(::Type{Null}, d::Dict) = Null()
 
 """
 Link target (URL, title).
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Target
   url::Text = ""
@@ -481,6 +544,8 @@ StructTypes.lower(e::Target) = [e.url, e.title]
 
 """
 Text (string)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Str <: Inline
   content::Text = ""
@@ -490,6 +555,8 @@ StructTypes.constructfrom(::Type{Str}, d::Dict) = Str(d["c"])
 
 """
 Emphasized text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Emph <: Inline
   content::Vector{Inline} = []
@@ -499,6 +566,8 @@ StructTypes.constructfrom(::Type{Emph}, d::Dict) = Emph(map(Inline, d["c"]))
 
 """
 Underlined text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Underline <: Inline
   content::Vector{Inline} = []
@@ -508,6 +577,8 @@ StructTypes.constructfrom(::Type{Underline}, d::Dict) = Underline(map(Inline, d[
 
 """
 Strongly emphasized text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Strong <: Inline
   content::Vector{Inline} = []
@@ -517,6 +588,8 @@ StructTypes.constructfrom(::Type{Strong}, d::Dict) = Strong(map(Inline, d["c"]))
 
 """
 Strikeout text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Strikeout <: Inline
   content::Vector{Inline} = []
@@ -526,6 +599,8 @@ StructTypes.constructfrom(::Type{Strikeout}, d::Dict) = Strikeout(map(Inline, d[
 
 """
 Superscripted text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Superscript <: Inline
   content::Vector{Inline} = []
@@ -535,6 +610,8 @@ StructTypes.constructfrom(::Type{Superscript}, d::Dict) = Superscript(map(Inline
 
 """
 Subscripted text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Subscript <: Inline
   content::Vector{Inline} = []
@@ -544,6 +621,8 @@ StructTypes.constructfrom(::Type{Subscript}, d::Dict) = Subscript(map(Inline, d[
 
 """
 Small caps text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct SmallCaps <: Inline
   content::Vector{Inline} = []
@@ -553,6 +632,8 @@ StructTypes.constructfrom(::Type{SmallCaps}, d::Dict) = SmallCaps(map(Inline, d[
 
 """
 Quoted text (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Quoted <: Inline
   quote_type::QuoteType.T
@@ -573,6 +654,8 @@ end
 
 """
 Citation (list of inlines)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Cite <: Inline
   citations::Vector{Citation} = []
@@ -583,6 +666,8 @@ StructTypes.constructfrom(::Type{Cite}, d::Dict) = Cite(map(Citation, d["c"][1])
 
 """
 Inline code (literal)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Code <: Inline
   attr::Attr = Attr()
@@ -593,6 +678,8 @@ StructTypes.constructfrom(::Type{Code}, d::Dict) = Code(Attr(d["c"][1]...), d["c
 
 """
 Inter-word space
+
+$(TYPEDFIELDS)
 """
 struct Space <: Inline end
 StructTypes.lower(_::Space) = OrderedDict("t" => "Space")
@@ -600,6 +687,8 @@ StructTypes.constructfrom(::Type{Space}, d::Dict) = Space()
 
 """
 Soft line break
+
+$(TYPEDFIELDS)
 """
 struct SoftBreak <: Inline end
 StructTypes.lower(_::SoftBreak) = OrderedDict("t" => "SoftBreak")
@@ -607,6 +696,8 @@ StructTypes.constructfrom(::Type{SoftBreak}, d::Dict) = SoftBreak()
 
 """
 Hard line break
+
+$(TYPEDFIELDS)
 """
 struct LineBreak <: Inline end
 StructTypes.lower(_::LineBreak) = OrderedDict("t" => "LineBreak")
@@ -614,6 +705,8 @@ StructTypes.constructfrom(::Type{LineBreak}, d::Dict) = LineBreak()
 
 """
 TeX math (literal)
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Math <: Inline
   math_type::MathType.T
@@ -634,6 +727,8 @@ end
 
 """
 Raw inline
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct RawInline <: Inline
   format::Format = ""
@@ -644,6 +739,8 @@ StructTypes.constructfrom(::Type{RawInline}, d::Dict) = RawInline(d["c"]...)
 
 """
 Hyperlink: alt text (list of inlines), target
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Link <: Inline
   attr::Attr = Attr()
@@ -655,6 +752,8 @@ StructTypes.constructfrom(::Type{Link}, d::Dict) = Link(Attr(d["c"][1]...), map(
 
 """
 Image: alt text (list of inlines), target
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Image <: Inline
   attr::Attr = Attr()
@@ -666,6 +765,8 @@ StructTypes.constructfrom(::Type{Image}, d::Dict) = Image(Attr(d["c"][1]...), ma
 
 """
 Footnote or endnote
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Note <: Inline
   content::Vector{Block} = []
@@ -675,6 +776,8 @@ StructTypes.constructfrom(::Type{Note}, d::Dict) = Note(map(Block, d["c"]))
 
 """
 Generic inline container with attributes
+
+$(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Span <: Inline
   attr::Attr = Attr()
@@ -737,6 +840,11 @@ function MetaValue(data::Dict)
   MetaValueData(MetaValueType.MetaMap, d)
 end
 
+"""
+Document
+
+$(TYPEDFIELDS)
+"""
 Base.@kwdef mutable struct Document
   data::Dict{Symbol,Any} = Dict()
   pandoc_api_version::VersionNumber = v"1.23"

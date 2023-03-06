@@ -1,6 +1,5 @@
 """
-    Converter(input = "# header level 1") -> String
-    Converter(input = "# header level 1", from="markdown", to="html") -> String
+$(TYPEDSIGNATURES)
 
 This is a `Converter` options struct.
 It supports all of pandoc's command line arguments.
@@ -8,7 +7,21 @@ It supports all of pandoc's command line arguments.
 You can use it like so:
 
 ```julia
-run(Converter(; input = "# Header level 1"))
+julia> run(Converter(; input = "# Header level 1"))
+"<h1 id=\"header-level-1\">Header level 1</h1>\r\n"
+
+julia> c = Pandoc.Converter(; input = "# Header level 1")
+`pandoc`
+
+julia> c.from = "markdown";
+
+julia> c.to = "rst";
+
+julia> c
+`pandoc -f markdown -t rst`
+
+julia> run(c)
+"Header level 1\r\n==============\r\n"
 ```
 """
 Base.@kwdef mutable struct Converter
@@ -229,6 +242,12 @@ function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
   cmd
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+```julia
+```
+"""
 function Base.run(c::Converter)
   cmd = command(c)
   stdin = if c.input isa String
