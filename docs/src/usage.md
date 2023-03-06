@@ -11,14 +11,32 @@ To use it in Julia, first add it:
 
 Then you can run the following:
 
-```
-julia> using Pandoc
-julia> Pandoc.Document("""# header level 1""")
+```@repl
+using Pandoc
+
+doc = Pandoc.Document(raw"""
+  # header level 1
+
+  This is a paragraph.
+
+  ## header level 2
+
+  This is another paragraph.
+""")
+
+for block in doc.blocks
+  if block isa Pandoc.Header
+    block.level += 1
+  end
+end
+
+run(Pandoc.Converter(input = JSON3.write(doc), from="json", to="markdown"))|> println
 ```
 
 You can also load a file from disk:
 
 ```
 julia> using Pandoc, FilePaths
+
 julia> Pandoc.Document(p"./path/to/markdown_file.md")
 ```
