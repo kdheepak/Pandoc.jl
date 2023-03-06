@@ -72,7 +72,7 @@ This is another paragraph
 """)
 ```
 
-### Convert Markdown to Pandoc JSOn
+### Convert Markdown to Pandoc JSon
 
 ```@repl
 using Pandoc
@@ -81,6 +81,10 @@ Pandoc.JSON3.write(Pandoc.Document(raw"""
 # header level 1
 
 This is a paragraph
+
+## header level 2
+
+This is another paragraph
 """))
 ```
 
