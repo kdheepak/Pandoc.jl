@@ -16,11 +16,38 @@ To install Pandoc.jl, open the Julia package manager prompt and type:
 ## Quick Start
 
 ```julia
-julia> using Pandoc, FilePaths, Test
+julia> using Pandoc
+```
 
-julia> doc = Pandoc.Document(p"./test/data/example.md");
+**Converter**
 
-julia> @test doc.pandoc_api_version == v"1.23"
+```julia
+julia> run(Pandoc.Converter(input = raw"""
+# This is a header
 
-julia> @test length(doc.blocks) == 548
+This is a paragraph.
+""")) |> println
+<h1 id="this-is-a-header">This is a header</h1>
+<p>This is a paragraph.</p>
+```
+
+**Filter**
+
+```julia
+julia> doc = Pandoc.Document(raw"""
+# This is a header
+
+This is a paragraph.
+""")
+
+julia> for block in doc.blocks
+         if block isa Pandoc.Header
+           block.level += 1
+         end
+       end
+
+julia> run(Pandoc.Converter(input = JSON3.write(doc), from="json", to="markdown"))|> println
+## This is a header
+
+This is a paragraph.
 ```
