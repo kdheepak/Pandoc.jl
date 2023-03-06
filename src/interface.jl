@@ -23,6 +23,9 @@ julia> c
 julia> run(c)
 "Header level 1\r\n==============\r\n"
 ```
+
+`mutable struct Converter`
+  $(TYPEDFIELDS)
 """
 Base.@kwdef mutable struct Converter
   input::Union{String,AbstractPath,Vector{<:AbstractPath},Document}
