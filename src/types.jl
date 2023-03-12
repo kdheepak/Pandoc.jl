@@ -877,3 +877,24 @@ function Document(data::AbstractPath, to = "json", kwargs...)
     JSON3.read(run(Converter(; input = data, to = "json", kwargs...)), Document)
   end
 end
+
+"""
+    metadata(data::Union{String, AbstractPath})
+
+```julia
+julia> Pandoc.metadata(p"my-unicode-cheat-sheet/index.qmd")
+Dict{Symbol, Any} with 7 entries:
+  :categories => ["neovim", "python", "julia", "rust"]
+  :keywords   => "python, julia, vim, rust, unicode"
+  :title      => "My Unicode cheat sheet"
+  :summary    => "References for various things associated with unicode in Vim, P…
+  :date       => "2020-09-19T02:29:49-06:00"
+```
+"""
+function metadata(data, from = "markdown", kwargs...)
+  t = tempname() * ".ext"
+  open(t, "w") do f
+    write(f, raw"$meta-json$")
+  end
+  Dict(JSON3.read(run(Converter(; input = data, template = t, from, kwargs...))))
+end
