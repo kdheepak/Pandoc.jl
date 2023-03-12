@@ -866,12 +866,14 @@ function Document(data::String; to = "json", kwargs...)
   JSON3.read(run(Converter(; input = data, to = "json", kwargs...)), Document)
 end
 
-function Document(data::AbstractPath)
-  ext = extension(data)
-  json = if ext == "json"
-    read(data)
-  else
-    read(`$PANDOC_JL_EXECUTABLE -t json $data`, String)
+function Document(data::AbstractPath, to = "json", kwargs...)
+  if to != "json"
+    @warn "Cannot create Document with `to = \"$to\"`, using `to = \"json\"`."
   end
-  JSON3.read(json, Document)
+  ext = extension(data)
+  if ext == "json" || get(Dict(kwargs), "from", nothing) == "json"
+    JSON3.read(read(data), Document)
+  else
+    JSON3.read(run(Converter(; input = data, to = "json", kwargs...)), Document)
+  end
 end
