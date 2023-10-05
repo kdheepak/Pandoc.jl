@@ -163,7 +163,7 @@ function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
     cmd = `$cmd --include-before-body=$(include)`
   end
   for include in c.include_after_body
-    cmd = `$cmd --include-after_body=$(include)`
+    cmd = `$cmd --include-after-body=$(include)`
   end
   c.no_highlight && (cmd = `$cmd --no-highlight`)
   !isnothing(c.highlight_style) && (cmd = `$cmd --highlight-style=$(c.highlight_style)`)
@@ -172,7 +172,7 @@ function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
   !isnothing(c.eol) && (cmd = `$cmd --eol=$(c.eol)`)
   !isnothing(c.columns) && (cmd = `$cmd --columns=$(c.columns)`)
   c.preserve_tabs && (cmd = `$cmd --preserve-tabs`)
-  !isnothing(c.tab_stop) && (cmd = `$cmd --tab_stop=$(c.tab_stop)`)
+  !isnothing(c.tab_stop) && (cmd = `$cmd --tab-stop=$(c.tab_stop)`)
   !isnothing(c.pdf_engine) && (cmd = `$cmd --pdf-engine=$(c.pdf_engine)`)
   !isnothing(c.pdf_engine_opt) && (cmd = `$cmd --pdf-engine-opt=$(c.pdf_engine_opt)`)
   !isnothing(c.reference_doc) && (cmd = `$cmd --reference-doc=$(c.reference_doc)`)
@@ -236,7 +236,7 @@ function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
   c.bash_completion && (cmd = `$cmd --bash-completion`)
   c.list_input_formats && (cmd = `$cmd --list-input-formats`)
   c.list_output_formats && (cmd = `$cmd --list-output-formats`)
-  !isnothing(c.list_extensions) && (cmd = c.list_extensions == true ? `$cmd --list_extensions` : `$cmd --list_extensions=$(c.list_extensions)`)
+  !isnothing(c.list_extensions) && (cmd = c.list_extensions == true ? `$cmd --list-extensions` : `$cmd --list-extensions=$(c.list_extensions)`)
   c.list_highlight_languages && (cmd = `$cmd --list-highlight-languages`)
   c.list_highlight_styles && (cmd = `$cmd --list-highlight-styles`)
   !isnothing(c.print_default_template) && (cmd = `$cmd --print-default-template=$(c.print_default_template)`)
