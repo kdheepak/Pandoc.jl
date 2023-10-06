@@ -343,7 +343,7 @@ function ColSpec(d::Vector)
   ColSpec(alignment, ColWidth(colwidth))
 end
 StructTypes.StructType(::Type{ColSpec}) = StructTypes.CustomStruct()
-StructTypes.lower(e::ColSpec) = [e.alignment, e.colwidth]
+StructTypes.lower(e::ColSpec) = [Dict("t" => e.alignment), e.colwidth]
 
 """
 The number of rows occupied by a cell; the height of a cell.
@@ -381,7 +381,7 @@ function Cell(v::Vector)
   Cell(Attr(attr...), alignment, rowspan, colspan, map(Block, content))
 end
 StructTypes.StructType(::Type{Cell}) = StructTypes.CustomStruct()
-StructTypes.lower(e::Cell) = [e.attr, e.alignment, e.rowspan, e.colspan, e.content]
+StructTypes.lower(e::Cell) = [e.attr, Dict("t" => e.alignment), e.rowspan, e.colspan, e.content]
 
 """
 Row
@@ -712,7 +712,7 @@ Base.@kwdef mutable struct Math <: Inline
   math_type::MathType.T
   content::Text = ""
 end
-StructTypes.lower(e::Math) = OrderedDict(["t" => "Math", "c" => [e.math_type, e.content]])
+StructTypes.lower(e::Math) = OrderedDict(["t" => "Math", "c" => [Dict("t" => e.math_type), e.content]])
 function StructTypes.constructfrom(::Type{Math}, d::Dict)
   math_type, content = d["c"]
   math_type = if math_type["t"] == "DisplayMath"
