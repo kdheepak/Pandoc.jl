@@ -1,7 +1,7 @@
 name = "Pandoc"
 uuid = "f853b5e0-b243-11e9-0043-7da5023c5ee7"
 authors = ["Dheepak Krishnamurthy <me@kdheepak.com>"]
-version = "0.4.3"
+version = "0.4.4"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
