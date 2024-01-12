@@ -1,25 +1,76 @@
-const PandocType = Union{
+# pandocnodetypes = [Attr, BlockQuote, BulletList, Caption, Cell, Citation, Cite, Code, CodeBlock, ColSpec, DefinitionList, Div, Emph, Figure, Header, HorizontalRule, Image, LineBlock, LineBreak, Link, ListAttributes, Math, Note, Null, OrderedList, Para, Plain, Quoted, RawBlock, RawInline, Row, ShortCaption, SmallCaps, SoftBreak, Space, Span, Str, Strikeout, Strong, Subscript, Superscript, Table, TableBody, TableFoot, TableHead, Target, Underline, Unknown, Vector{Inline}, Vector{Block}, Vector{Vector{Block}}, Pair{Vector{Inline},Vector{Vector{Block}}}, Vector{Pair{Vector{Inline},Vector{Vector{Block}}}}]
+
+"Types without children"
+const _PandocLeaf = Union{
     Attr,
-    Caption,
-    Cell,
-    ColSpec, # 
-    ColWidth, #
-    Citation,
-    ListAttributes, #
-    Row,
+    ColSpec,
+    HorizontalRule,
+    LineBlock,
+    LineBreak,
+    ListAttributes,
+    Math,
+    Null,
+    RawBlock,
+    RawInline,
     ShortCaption,
-    TableBody,
-    TableFoot,
-    TableHead,
-    Target, #
-    Element,
-    Pair{Vector{Inline}, Vector{Vector{Block}}},
+    SoftBreak,
+    Space,
+    Str,
+    Target,
+    Unknown
 }
 
-Base.getindex(el::PandocType, prop::Symbol) = getproperty(el, prop)
-Base.setindex!(el::PandocType, x, prop::Symbol) = setproperty!(el, prop, x)
-Base.getindex(doc::Pandoc.Document, idx) = doc.blocks[idx]
-Base.setindex!(doc::Pandoc.Document, x, idx) = setindex!(doc, x, idx)
+"Types with Attr at `:attr` field"
+const _PandocWithAttr = Union{
+    Cell,
+    Code,
+    CodeBlock,
+    Div,
+    Figure,
+    Header,
+    Image,
+    Link,
+    Row,
+    Span,
+    Table,
+    TableBody,
+    TableFoot,
+    TableHead
+}
+
+"Vector types"
+const _PandocVector = Union{
+    Vector{Inline},
+    Vector{Block},
+    Vector{Vector{Block}},
+    Vector{Pair{Vector{Inline}, Vector{Vector{Block}}}}
+}
+
+"Rest of the types that will promote to NoteType"
+const _PandocRestOfTypes = Union{
+    BlockQuote,
+    BulletList,
+    Caption,
+    Citation,
+    Cite,
+    DefinitionList,
+    Emph,
+    Note,
+    OrderedList,
+    Para,
+    Plain,
+    Quoted,
+    SmallCaps,
+    Strikeout,
+    Strong,
+    Subscript,
+    Superscript,
+    Underline,
+    Pair{Vector{Inline}, Vector{Vector{Block}}}
+}
+
+const _PandocBranch = Union{_PandocRestOfTypes, _PandocVector, _PandocWithAttr}
+const _PandocAll = Union{_PandocLeaf, _PandocRestOfTypes, _PandocVector, _PandocWithAttr}
 
 const Key = Union{Int, Symbol}
 
@@ -29,79 +80,80 @@ const Key = Union{Int, Symbol}
 
 It returns a Node elements from which navigate the document.
 """
-mutable struct PDNode{N,P,K}
+abstract type PandocNode{N} end
+mutable struct PandocStructNode{N} <: PandocNode{N}
     node::N
-    parent::Union{Nothing, PDNode}
+    parent::Union{Nothing,PandocNode}
     key::Key
-    function PDNode(n, p, k)
-        new{typeof(n), typeof(nodevalue(p)), isa(n, Vector) ? Int : Symbol}(n, p, k)
-    end
-    function PDNode(n::Pandoc.Document, p, k)
-        new{typeof(n), typeof(nodevalue(p)), Int}(n, p, k)
+    function PandocStructNode(n,p,k)
+        new{typeof(n)}(n,p,k)
     end
 end
-PDNode(root) = PDNode(root, nothing, 1)
+struct PandocVectorNode{N} <: PandocNode{N}
+    node::N
+    parent::Union{Nothing,PandocNode}
+    key::Key
+    function PandocVectorNode(n,p,k)
+        new{typeof(n)}(n,p,k)
+    end
+end
+PandocNode(doc::Document) = PandocVectorNode(doc, nothing, 1)
+PandocNode(n::_PandocVector, p, k) = PandocVectorNode(n, p, k)
+PandocNode(n::Union{_PandocLeaf,_PandocWithAttr,_PandocRestOfTypes}, p, k) = PandocStructNode(n, p, k)
 
-const PDNodeSymbol = PDNode{N,P,Symbol} where {N,P}
-const PDNodeInt = PDNode{N,P,Int} where {N,P}
-
-AbstractTrees.nodevalue(n::PDNode) = n.node
-AbstractTrees.nodevaluetype(n::PDNode{N,P,K}) where {N,P,K} = N
-AbstractTrees.children(n::PDNodeInt) = begin
-    ch = PDNode[]
+AbstractTrees.nodevalue(n::PandocNode) = n.node
+AbstractTrees.nodevaluetype(::PandocNode{N}) where {N} = N
+AbstractTrees.parent(n::PandocNode) = n.parent
+AbstractTrees.children(n::PandocVectorNode) = begin
+    ch = PandocNode[]
     nv = nodevalue(n)
     for i in eachindex(nv)
-        push!(ch, PDNode(nv[i], n, i))
+        push!(ch, PandocNode(nv[i], n, i))
     end
     ch
 end
-AbstractTrees.children(n::PDNode{Pandoc.Document,Nothing,Int}) = begin
-    ch = PDNode[]
-    nv = nodevalue(n).blocks
-    for i in eachindex(nv)
-        push!(ch, PDNode(nv[i], n, i))
-    end
-    ch
-end
-AbstractTrees.children(n::PDNodeSymbol) = begin
-    ch = PDNode[]
+AbstractTrees.children(n::PandocStructNode) = begin
+    ch = PandocNode[]
     nv = nodevalue(n)
     for prop in propertynames(nv)
-        push!(ch, PDNode(nv[prop], n, prop))
+        new = getproperty(nv, prop)
+        if isa(new, _PandocAll)
+            push!(ch, PandocNode(new, n, prop))
+        end
     end
     ch
 end
-AbstractTrees.parent(n::PDNode) = n.parent
-AbstractTrees.ParentLinks(::Type{<:PDNode}) = StoredParents()
-AbstractTrees.printnode(io::IO, n::PDNode) = begin
+AbstractTrees.children(n::PandocVectorNode{Document}) = begin
+    ch = PandocNode[]
+    nv = nodevalue(n).blocks
+    for i in eachindex(nv)
+        push!(ch, PandocNode(nv[i], n, i))
+    end
+    ch
+end
+AbstractTrees.ParentLinks(::Type{<:PandocNode}) = StoredParents()
+AbstractTrees.printnode(io::IO, n::PandocNode) = begin
     if isnothing(n.parent)
         print(io, "<", typeof(n).parameters[1], " ROOT>")
     else
-        print(io, "<", typeof(n).parameters[1], " <= ", typeof(n).parameters[2], "[", isa(n.key, Int) ? "" : ":", n.key, "]>")
+        print(io, "<", typeof(n).parameters[1], " <= ", typeof(n.parent).parameters[1], "[", isa(n.key, Int) ? "" : ":", n.key, "]>")
     end
 end
-Base.show(io::IO, n::PDNode) = begin
+Base.show(io::IO, n::PandocNode) = begin
     if isnothing(n.parent)
         print(io, "<", typeof(n).parameters[1], " ROOT>")
     else
-        print(io, "<", typeof(n).parameters[1], " <= ", typeof(n).parameters[2], "[", isa(n.key, Int) ? "" : ":", n.key, "]>")
+        print(io, "<", typeof(n).parameters[1], " <= ", typeof(n.parent).parameters[1], "[", isa(n.key, Int) ? "" : ":", n.key, "]>")
     end
 end
 
-
-"""
-    clone(el)
-
-Clone element as deatached from parent. 
-"""
-function clone(el::TreeCursor) end
 """
     collectall(root)
 
 Colects all elements in `root`, including those which are not Pandoc types. It returns a collection of `IndexedCursor`s
 """
-function collectall(root::PDNode) 
-    collect(PostOrderDFS(root))
+function collectall(root::PandocNode) 
+    collect(PreOrderDFS(root))
 end
 
 """
@@ -110,29 +162,20 @@ end
 
 Returns all `PDNode{N,P,K}` which types `N <: type`.
 """
-function elementsbytype(root::PDNode{N,Nothing,K}, type::Type{<:PandocType}) where {N,K}
-    o = PDNode[]
+function elementsbytype(root::PandocNode{Document}, type::Type{<:_PandocAll})
+    o = PandocNode[]
     itr = PostOrderDFS(root)
     for i in itr
-        if AbstractTrees.nodevaluetype(i) == type
+        if isa(nodevalue(i), type)
             push!(o, i)
         end
     end
     o
 end
 
-function hasclass(n::PDNode{Attr,P,Symbol}, class::String) where P
-    nv = nodevalue(n)
-    if in(:classes, propertynames(nv)) 
-        return in(class, nv.classes)
-    else
-        return false
-    end
-end
-
-function elementsbyclass(root::PDNode, class::String) 
-    itr = elementsbytype(root, Attr)
-    map(AbstractTrees.parent, filter((el) -> hasclass(el, class) , itr))
+function elementsbyclass(root::PandocNode, class::String) 
+    itr = elementsbytype(root, _PandocWithAttr)
+    filter((n) -> in(class, nodevalue(n).attr.classes) , itr)
 end
 
 """
@@ -141,40 +184,44 @@ end
 Returns first Pandoc element which `el.attr.identifier` equals `id`. Returns a IndexedCursor from which 
 one can navigate the document.
 """
-function elementbyid(root::PDNode, id::String)
-    itr = PostOrderDFS(root)
+function elementbyid(root::PandocNode, id::String)
+    itr = elementsbytype(root, _PandocWithAttr)
     for i in itr
-        if AbstractTrees.nodevaluetype(i) == Attr && nodevalue(i).identifier == id
-            return AbstractTrees.parent(i)
+        if nodevalue(i).attr.identifier == id
+            return i
         end
     end
-    o
 end
 
 # |||| WIP This is work in progreess. ||||
 # vvvv                                vvvv
 
-function remove!(el::AbstractTrees.IndexedCursor{<:PandocType,Vector}) 
-    
-end
-function addafter!(el::AbstractTrees.IndexedCursor{<:PandocType,Vector}, new) 
-    
-end
-function addbefore!(el::AbstractTrees.IndexedCursor{<:PandocType,Vector}, new) 
+function clear!(el::PandocNode) 
     
 end
 
-# Methods that act over all nodes
-function clear!(crs::AbstractTrees.IndexedCursor{<:PandocType, <:PandocType})
-    p = AbstractTrees.parent(crs)
-    idx = crs.index
-    props = propertynames(nodevalue(p))
-    el = typeof(nodevalue(crs))()
-    setproperty!(nodevalue(p), props[idx], el)
+function substitute!(el::PandocNode, new) 
+    
 end
 
-function substitute!(el, new) 
-    # el and new must be similar
-    p = (nodevalue ∘ parent)(el)
-    setproperty!(nodevalue(p), el.key, new)
+function addafter!(el::PandocNode, new) 
+    
 end
+
+function addbefore!(el::PandocNode, new) 
+    
+end
+
+"""true or false"""
+function hasclass end
+
+"""Return the value of the attribute or nothing"""
+function getattr end
+
+function addclass! end
+
+function removeclass! end
+
+function addattr! end
+
+function removeattr! end
