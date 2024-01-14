@@ -203,7 +203,7 @@ function clear!(n::PandocNode)
     else
         deleteat!(pv, n.key)
     end
-    nothing
+    n
 end
 """ 
     substitute!(n, new)
@@ -217,7 +217,7 @@ function substitute!(n::PandocNode, new)
     else
         setindex!(pv, new, n.key)
     end
-    nothing
+    n
 end
 """ 
     addafter!(n, new)
@@ -226,9 +226,9 @@ Adds the element `new` after the node `n`.
 """
 function addafter!(n::PandocNode, new) 
     isa(n.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
-    pv = nodevalue(parent(n))
-    splice!(pv, n.key, [n.node, new])
-    nothing
+    p = parent(n)
+    splice!(nodevalue(p), n.key, [n.node, new])
+    PandocNode(new, p, n.key + 1)
 end
 """ 
     addbefore!(n, new)
@@ -239,7 +239,7 @@ function addbefore!(n::PandocNode, new)
     isa(n.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
     pv = nodevalue(parent(n))
     splice!(pv, n.key, [new, n.node])
-    nothing
+    PandocNode(new, p, n.key)
 end
 """
     hasclass(n, class)
@@ -259,7 +259,7 @@ function addclass!(n::PandocNode{<:_PandocWithAttr}, class)
     classes = nodevalue(n).attr.classes
     in(class, classes) && return nothing
     push!(classes, class)
-    nothing
+    n
 end
 """
     removeclass!(n, class)
@@ -269,7 +269,7 @@ Removes all classes `class` from `n`.
 function removeclass!(n::PandocNode{<:_PandocWithAttr}, class)
     classes = nodevalue(n).attr.classes
     filter!((c) -> !isequal(c,class), classes)
-    nothing
+    n
 end
 """
     getattr(n, attr_name)
@@ -294,7 +294,7 @@ function addattr!(n::PandocNode{<:_PandocWithAttr}, attr::Tuple{String, String})
         a[1] == attr[1] && error("Attribute already in use. Try to remove it first with `removeattr!`.")
     end
     push!(attrs, attr)
-    nothing
+    n
 end
 """
     removeattr!(n, attr_name)
@@ -304,5 +304,5 @@ Removes the value of the attribute `attr_name` for the node `n`, if any.
 function removeattr!(n::PandocNode{<:_PandocWithAttr}, attr_name::String)
     attrs = nodevalue(n).attr.attributes
     filter!((a) -> !isequal(a[1], attr_name) , attrs)
-    nothing
+    n
 end
