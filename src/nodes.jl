@@ -193,35 +193,78 @@ function elementbyid(root::PandocNode, id::String)
     end
 end
 
-# |||| WIP This is work in progreess. ||||
-# vvvv                                vvvv
+# || WIP This is work in progreess. ||
+# vv                                vv
 
-function clear!(el::PandocNode) 
-    
+function clear!(el::PandocNode)
+    pv = nodevalue(parent(el))
+    if isa(el.key, Symbol)
+        setproperty!(pv, el.key, N())
+    else
+        deleteat!(pv, el.key)
+    end
+    nothing
 end
 
 function substitute!(el::PandocNode, new) 
-    
+    pv = nodevalue(parent(el))
+    if isa(el.key, Symbol)
+        setproperty!(pv, el.key, new)
+    else
+        setindex!(pv, new, el.key)
+    end
+    nothing
 end
 
 function addafter!(el::PandocNode, new) 
-    
+    isa(el.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
+    pv = nodevalue(parent(el))
+    splice!(pv, el.key, [el.node, new])
+    nothing
 end
 
 function addbefore!(el::PandocNode, new) 
-    
+    isa(el.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
+    pv = nodevalue(parent(el))
+    splice!(pv, el.key, [new, el.node])
+    nothing
 end
 
 """true or false"""
-function hasclass end
+function hasclass(el::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(el).attr.classes
+    in(class, classes)
+end
+function addclass!(el::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(el).attr.classes
+    in(class, classes) && return nothing
+    push!(classes, class)
+    nothing
+end
+function removeclass!(el::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(el).attr.classes
+    filter!((c) -> !isequal(c,class), classes)
+    nothing
+end
 
 """Return the value of the attribute or nothing"""
-function getattr end
-
-function addclass! end
-
-function removeclass! end
-
-function addattr! end
-
-function removeattr! end
+function getattr(el::PandocNode{<:_PandocWithAttr}, attr_name::String)
+    attrs = nodevalue(el).attr.attributes
+    for i in eachindex(attrs)
+        attrs[1] == attr_name && return attrs[2]
+    end
+    nothing
+end
+function addattr!(el::PandocNode{<:_PandocWithAttr}, attr::Tuple{String, String})
+    attrs = nodevalue(el).attr.attributes
+    for a in attrs
+        a[1] == attr[1] && error("Attribute already in use. Try to remove it first with `removeattr!`.")
+    end
+    push!(attrs, attr)
+    nothing
+end
+function removeattr!(el::PandocNode{<:_PandocWithAttr}, attr_name::String)
+    attrs = nodevalue(el).attr.attributes
+    filter!((a) -> !isequal(a[1], attr_name) , attrs)
+    nothing
+end
