@@ -75,10 +75,9 @@ const _PandocAll = Union{_PandocLeaf, _PandocRestOfTypes, _PandocVector, _Pandoc
 const Key = Union{Int, Symbol}
 
 """
+    rootnode = PandocNode(root)
 
-    rootnode = PDNode(root)
-
-It returns a Node elements from which navigate the document.
+It returns a node element from which navigate the document.
 """
 abstract type PandocNode{N} end
 mutable struct PandocStructNode{N} <: PandocNode{N}
@@ -157,12 +156,11 @@ function collectall(root::PandocNode)
 end
 
 """
-
     elementsbytype(rootnode, type)
 
-Returns all `PDNode{N,P,K}` which types `N <: type`.
+Returns all `PandocNode{N}` which types `N <: type`.
 """
-function elementsbytype(root::PandocNode{Document}, type::Type{<:_PandocAll})
+function elementsbytype(root::PandocNode{Document}, type::Type{<:Union{_PandocAll,Block,Inline,Element}})
     o = PandocNode[]
     itr = PostOrderDFS(root)
     for i in itr
@@ -177,7 +175,6 @@ function elementsbyclass(root::PandocNode, class::String)
     itr = elementsbytype(root, _PandocWithAttr)
     filter((n) -> in(class, nodevalue(n).attr.classes) , itr)
 end
-
 """
     elementbyid(root, id)
 
@@ -192,79 +189,120 @@ function elementbyid(root::PandocNode, id::String)
         end
     end
 end
+""" 
+    clear!(n)
 
-# || WIP This is work in progreess. ||
-# vv                                vv
-
-function clear!(el::PandocNode)
-    pv = nodevalue(parent(el))
-    if isa(el.key, Symbol)
-        setproperty!(pv, el.key, N())
+Clears the node `n` from the tree. If its parent is a vector, it 
+removes the element. If its parent is a Pandoc element, it clears 
+all values. It doesn't work with all elements.
+"""
+function clear!(n::PandocNode)
+    pv = nodevalue(parent(n))
+    if isa(n.key, Symbol)
+        setproperty!(pv, n.key, N())
     else
-        deleteat!(pv, el.key)
+        deleteat!(pv, n.key)
     end
     nothing
 end
+""" 
+    substitute!(n, new)
 
-function substitute!(el::PandocNode, new) 
-    pv = nodevalue(parent(el))
-    if isa(el.key, Symbol)
-        setproperty!(pv, el.key, new)
+Substitutes the node `n` by the element `new`.
+"""
+function substitute!(n::PandocNode, new) 
+    pv = nodevalue(parent(n))
+    if isa(n.key, Symbol)
+        setproperty!(pv, n.key, new)
     else
-        setindex!(pv, new, el.key)
+        setindex!(pv, new, n.key)
     end
     nothing
 end
+""" 
+    addafter!(n, new)
 
-function addafter!(el::PandocNode, new) 
-    isa(el.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
-    pv = nodevalue(parent(el))
-    splice!(pv, el.key, [el.node, new])
+Adds the element `new` after the node `n`.
+"""
+function addafter!(n::PandocNode, new) 
+    isa(n.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
+    pv = nodevalue(parent(n))
+    splice!(pv, n.key, [n.node, new])
     nothing
 end
+""" 
+    addbefore!(n, new)
 
-function addbefore!(el::PandocNode, new) 
-    isa(el.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
-    pv = nodevalue(parent(el))
-    splice!(pv, el.key, [new, el.node])
+Adds the element `new` before the node `n`.
+"""
+function addbefore!(n::PandocNode, new) 
+    isa(n.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
+    pv = nodevalue(parent(n))
+    splice!(pv, n.key, [new, n.node])
     nothing
 end
+"""
+    hasclass(n, class)
 
-"""true or false"""
-function hasclass(el::PandocNode{<:_PandocWithAttr}, class)
-    classes = nodevalue(el).attr.classes
+Checks wheter a node `n` has a class `class`.  
+"""
+function hasclass(n::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(n).attr.classes
     in(class, classes)
 end
-function addclass!(el::PandocNode{<:_PandocWithAttr}, class)
-    classes = nodevalue(el).attr.classes
+"""
+    addclass!(n, class)
+
+Adds a class `class` to `n` if it's not already.
+"""
+function addclass!(n::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(n).attr.classes
     in(class, classes) && return nothing
     push!(classes, class)
     nothing
 end
-function removeclass!(el::PandocNode{<:_PandocWithAttr}, class)
-    classes = nodevalue(el).attr.classes
+"""
+    removeclass!(n, class)
+
+Removes all classes `class` from `n`.
+"""
+function removeclass!(n::PandocNode{<:_PandocWithAttr}, class)
+    classes = nodevalue(n).attr.classes
     filter!((c) -> !isequal(c,class), classes)
     nothing
 end
+"""
+    getattr(n, attr_name)
 
-"""Return the value of the attribute or nothing"""
-function getattr(el::PandocNode{<:_PandocWithAttr}, attr_name::String)
-    attrs = nodevalue(el).attr.attributes
+Returns the value of the attribute `attr_name` for the node `n`, if any.
+"""
+function getattr(n::PandocNode{<:_PandocWithAttr}, attr_name::String)
+    attrs = nodevalue(n).attr.attributes
     for i in eachindex(attrs)
         attrs[1] == attr_name && return attrs[2]
     end
     nothing
 end
-function addattr!(el::PandocNode{<:_PandocWithAttr}, attr::Tuple{String, String})
-    attrs = nodevalue(el).attr.attributes
+"""
+    addattr!(n, {name, value})
+
+Adds attribure `{name, value}` to the node `n`.
+"""
+function addattr!(n::PandocNode{<:_PandocWithAttr}, attr::Tuple{String, String})
+    attrs = nodevalue(n).attr.attributes
     for a in attrs
         a[1] == attr[1] && error("Attribute already in use. Try to remove it first with `removeattr!`.")
     end
     push!(attrs, attr)
     nothing
 end
-function removeattr!(el::PandocNode{<:_PandocWithAttr}, attr_name::String)
-    attrs = nodevalue(el).attr.attributes
+"""
+    removeattr!(n, attr_name)
+
+Removes the value of the attribute `attr_name` for the node `n`, if any.
+"""
+function removeattr!(n::PandocNode{<:_PandocWithAttr}, attr_name::String)
+    attrs = nodevalue(n).attr.attributes
     filter!((a) -> !isequal(a[1], attr_name) , attrs)
     nothing
 end
