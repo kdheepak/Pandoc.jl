@@ -96,9 +96,25 @@ struct PandocVectorNode{N} <: PandocNode{N}
         new{typeof(n)}(n,p,k)
     end
 end
-PandocNode(doc::Document) = PandocVectorNode(doc, nothing, 1)
+PandocNode(doc::Document) = PandocStructNode(doc, nothing, 0)
 PandocNode(n::_PandocVector, p, k) = PandocVectorNode(n, p, k)
 PandocNode(n::Union{_PandocLeaf,_PandocWithAttr,_PandocRestOfTypes}, p, k) = PandocStructNode(n, p, k)
+
+# Extra functionality through properties
+Base.propertynames(n::PandocStructNode{N}) where N = (fieldnames(typeof(n))..., fieldnames(N)...)
+Base.getproperty(n::PandocStructNode, s::Symbol) = begin
+    if in(s, fieldnames(typeof(n)))
+        return getfield(n, s)
+    else
+        prop = getproperty(getfield(n, :node), s)
+        return isa(prop, _PandocAll) ? PandocNode(prop, n, s) : prop
+    end
+end
+Base.setproperty!(n::PandocStructNode, s, v) = setproperty!(nodevalue(n), s, v)
+Base.setproperty!(n::PandocStructNode, s, v::PandocNode) = setproperty!(nodevalue(n), s, nodevalue(v))
+Base.getindex(n::PandocVectorNode, idx) = PandocNode(getindex(nodevalue(n), idx), n, idx)
+Base.setindex!(n::PandocVectorNode, v, idx) = setindex!(nodevalue(n), v, idx)
+Base.setindex!(n::PandocVectorNode, v::PandocNode, idx) = setindex!(nodevalue(n), nodevalue(v), idx)
 
 AbstractTrees.nodevalue(n::PandocNode) = n.node
 AbstractTrees.nodevaluetype(::PandocNode{N}) where {N} = N
@@ -119,14 +135,6 @@ AbstractTrees.children(n::PandocStructNode) = begin
         if isa(new, _PandocAll)
             push!(ch, PandocNode(new, n, prop))
         end
-    end
-    ch
-end
-AbstractTrees.children(n::PandocVectorNode{Document}) = begin
-    ch = PandocNode[]
-    nv = nodevalue(n).blocks
-    for i in eachindex(nv)
-        push!(ch, PandocNode(nv[i], n, i))
     end
     ch
 end
@@ -160,7 +168,7 @@ end
 
 Returns all `PandocNode{N}` which types `N <: type`.
 """
-function elementsbytype(root::PandocNode{Document}, type::Type{<:Union{_PandocAll,Block,Inline,Element}})
+function elementsbytype(root::PandocNode, type::Type{<:Union{_PandocAll,Block,Inline,Element}})
     o = PandocNode[]
     itr = PostOrderDFS(root)
     for i in itr
@@ -239,7 +247,8 @@ function addbefore!(n::PandocNode, new)
     isa(n.key, Symbol) && error("Cannot add a new element if parent is not a vector!")
     pv = nodevalue(parent(n))
     splice!(pv, n.key, [new, n.node])
-    PandocNode(new, p, n.key)
+    n.key += 1
+    PandocNode(new, p, n.key - 1)
 end
 """
     hasclass(n, class)
