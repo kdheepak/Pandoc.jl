@@ -110,8 +110,8 @@ Base.getproperty(n::PandocStructNode, s::Symbol) = begin
         return isa(prop, _PandocAll) ? PandocNode(prop, n, s) : prop
     end
 end
-Base.setproperty!(n::PandocStructNode, s, v) = setproperty!(nodevalue(n), s, v)
-Base.setproperty!(n::PandocStructNode, s, v::PandocNode) = setproperty!(nodevalue(n), s, nodevalue(v))
+Base.setproperty!(n::PandocStructNode, s::Symbol, v) = setproperty!(nodevalue(n), s, v)
+Base.setproperty!(n::PandocStructNode, s::Symbol, v::PandocNode) = setproperty!(nodevalue(n), s, nodevalue(v))
 Base.getindex(n::PandocVectorNode, idx) = PandocNode(getindex(nodevalue(n), idx), n, idx)
 Base.setindex!(n::PandocVectorNode, v, idx) = setindex!(nodevalue(n), v, idx)
 Base.setindex!(n::PandocVectorNode, v::PandocNode, idx) = setindex!(nodevalue(n), nodevalue(v), idx)
