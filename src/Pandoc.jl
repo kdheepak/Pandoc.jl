@@ -19,6 +19,7 @@ using InlineTest
 using JSON3
 using StructTypes
 using DataStructures
+using AbstractTrees
 
 using pandoc_jll
 
@@ -26,5 +27,6 @@ const PANDOC_JL_EXECUTABLE = get(ENV, "PANDOC_JL_EXECUTABLE", pandoc())
 
 include("types.jl")
 include("interface.jl")
+include("nodes.jl")
 
 end # module
