@@ -149,7 +149,9 @@ StructTypes.StructType(::Type{ListAttributes}) = StructTypes.CustomStruct()
 StructTypes.lower(e::ListAttributes) = [e.number, Dict("t" => e.style), Dict("t" => e.delim)]
 function ListAttributes(d::Vector)
   number, style, delim = d
-  style = if style["t"] == "Decimal"
+  style = if style["t"] == "Example"
+    ListNumberStyle.Example
+  elseif style["t"] == "Decimal"
     ListNumberStyle.Decimal
   elseif style["t"] == "LowerRoman"
     ListNumberStyle.LowerRoman
