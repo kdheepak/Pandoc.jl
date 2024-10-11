@@ -1,18 +1,18 @@
 
 @enumx Alignment AlignLeft AlignRight AlignCenter AlignDefault
-Alignment.T() = AlignDefault
+Alignment.T() = Alignment.AlignDefault
 
 """
 Style of list numbers.
 """
 @enumx ListNumberStyle DefaultStyle Example Decimal LowerRoman UpperRoman LowerAlpha UpperAlpha
-ListNumberStyle.T() = DefaultStyle
+ListNumberStyle.T() = ListNumberStyle.DefaultStyle
 
 """
 Delimiter of list numbers.
 """
 @enumx ListNumberDelim DefaultDelim Period OneParen TwoParens
-ListNumberDelim.T() = DefaultDelim
+ListNumberDelim.T() = ListNumberDelim.DefaultDelim
 
 """
 Type of quotation marks to use in Quoted inline.
