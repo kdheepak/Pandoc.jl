@@ -187,7 +187,7 @@ function command(c::Converter; p = PANDOC_JL_EXECUTABLE)
     cmd = `$cmd --filter=$(c.filter)`
   end
   for lua_filter in c.lua_filter
-    cmd = `$cmd -- $(c.lua_filter)`
+    cmd = `$cmd --lua-filter=$lua_filter`
   end
   !isnothing(c.shift_heading_level_by) && (cmd = `$cmd --shift-heading-level-by=$(c.shift_heading_level_by)`)
   !isnothing(c.base_header_level) && (cmd = `$cmd --base-header-level=$(c.base_header_level)`)
